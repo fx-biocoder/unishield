@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="welcomePageTitle">Welcome to UniShield</title>
+    <link rel="stylesheet" href="styles/welcome.css">
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <span class="logo-icon">🛡️</span>
+            <span>UniShield</span>
+        </div>
+        <div class="header-links">
+            <a href="donations.html" class="header-link-secondary" data-i18n="welcomeSupportLink">Support / Donate</a>
+            <button id="headerSettingsBtn" class="header-btn" data-i18n="welcomeOpenSettings">Open Settings</button>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <main class="hero">
+            <div class="hero-badge" data-i18n="welcomeHeroBadge">Universal Content Filter</div>
+            <h1 data-i18n="welcomeHeroTitle">
+                Welcome to <span class="gradient-text">UniShield</span>
+            </h1>
+            <p class="subtitle" data-i18n="welcomeHeroSubtitle">
+                Your universal shield against feed pollution on Reddit, X (Twitter), and LinkedIn. Enjoy a clean, authentic, and completely silent browsing experience without distraction.
+            </p>
+            
+            <div class="hero-actions">
+                <button id="heroOptionsBtn" class="btn-primary">
+                    <span>⚙️</span>
+                    <span data-i18n="welcomeCustomizeFilters">Customize Your Filters</span>
+                </button>
+                <span class="actions-note" data-i18n="welcomeActionsNote">Runs silently in the background • 100% local & tracker-free</span>
+            </div>
+        </main>
+
+        <section class="features-section">
+            <div class="feature-col-intro">
+                <div class="col-header" data-i18n="welcomePhilosophyHeader">PHILOSOPHY</div>
+                <h2 class="col-title" data-i18n="welcomePhilosophyTitle">Zero Clutter, Total Silence</h2>
+                <p class="col-desc" data-i18n="welcomePhilosophyDesc">
+                    UniShield is designed under a core philosophy: <strong>the user should never have to notice the extension at work</strong>. We don't inject intrusive badges or disrupt website layout. Polluted content simply vanishes naturally.
+                </p>
+                <div class="phil-highlight" data-i18n="welcomePrivacyHighlight">
+                    🛡️ <strong>100% Privacy:</strong> All heuristics, username evaluations, and regex pattern matching occur locally on your device. Zero analytics, zero data harvesting.
+                </div>
+            </div>
+
+            <div class="feature-col-grid">
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <span class="feature-icon">🤖</span>
+                        <h3 data-i18n="welcomeRedditTitle">Reddit Bot & Feed Defense</h3>
+                        <p data-i18n="welcomeRedditDesc">Silently identifies auto-generated bot patterns, suppresses political troll farm editorialized titles (2-4 sentences), blocks spam subreddits, and filters posts and comments by custom muted keywords.</p>
+                    </div>
+
+                    <div class="feature-item">
+                        <span class="feature-icon">𝕏</span>
+                        <h3 data-i18n="welcomeXTitle">X / Twitter Shield</h3>
+                        <p data-i18n="welcomeXDesc">Cleans your timeline from blue checkmark engagement-farming replies, AI-generated low-effort spam (e.g. <em>"comment below"</em>, <em>"te leo"</em>), memecoin/crypto scams, and ragebait.</p>
+                    </div>
+
+                    <div class="feature-item">
+                        <span class="feature-icon">💼</span>
+                        <h3 data-i18n="welcomeLinkedInTitle">LinkedIn Feed & Jobs</h3>
+                        <p data-i18n="welcomeLinkedInDesc">Removes promoted ads, suggested posts, interaction noise (<em>"liked this"</em>, <em>"commented"</em>), broetry, promoted job listings, and detects fake recruiter profiles with private notes.</p>
+                    </div>
+
+                    <div class="feature-item">
+                        <span class="feature-icon">⚖️</span>
+                        <h3 data-i18n="welcomeAntiHateTitle">Neutral Anti-Hate Filters</h3>
+                        <p data-i18n="welcomeAntiHateDesc">Balanced, objective protection against toxic "gender war" hostility (covering both misogyny and misandry) and universal anti-racism filtering covering all ethnicities without political double standards.</p>
+                    </div>
+
+                    <div class="feature-item">
+                        <span class="feature-icon">📊</span>
+                        <h3 data-i18n="welcomeCustomizationTitle">Granular Customization</h3>
+                        <p data-i18n="welcomeCustomizationDesc">Tailor your experience with custom muted keywords, company blocklists, one-click popup controls, and full JSON configuration backup & restore.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <p><span data-i18n="welcomeFooterText">UniShield — Universal Feed Cleaner &bull; </span><a href="donations.html" data-i18n="welcomeSupportProject">Support the Project</a> &bull; <a href="https://github.com/fx-biocoder" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+    </footer>
+
+    <script src="lib/i18n.js"></script>
+    <script src="welcome.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <!-- UniShield 16x16 Icon - Hand-tuned for crisp grid alignment -->
+  <path d="M8 1L14 3C14 8 11.5 12.5 8 15C4.5 12.5 2 8 2 3L8 1Z" fill="#14B8A6"/>
+  <path d="M8 2.5L12.5 4C12.5 8 10.5 11.5 8 13.5C5.5 11.5 3.5 8 3.5 4L8 2.5Z" fill="#172554"/>
+  <path d="M4.5 4.5H11.5L8.5 8V11L8 11.5L7.5 11V8L4.5 4.5Z" fill="#FFFFFF"/>
+  <rect x="6.5" y="5.5" width="3" height="1" rx="0.5" fill="#14B8A6"/>
+</svg>

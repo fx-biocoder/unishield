@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="popupPageTitle">UniShield</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="popup-container">
+        <header class="popup-header">
+            <div class="header-brand">
+                <span class="brand-icon">🛡️</span>
+                <div class="brand-title">
+                    <h1>UniShield</h1>
+                    <span class="version-tag">v1.0.0</span>
+                </div>
+            </div>
+            <div id="statusBadge" class="status-badge status-active" data-i18n="active">Active</div>
+        </header>
+
+        <div class="session-stats">
+            <span class="stats-label" data-i18n="hiddenThisSession">Hidden this session:</span>
+            <strong id="sessionCounter" class="stats-count">0</strong>
+        </div>
+
+        <main class="popup-body">
+            <div class="master-toggle-card">
+                <div class="toggle-info">
+                    <span class="toggle-title" data-i18n="genMasterEnable">Content Filters</span>
+                    <span id="toggleSubtitle" class="toggle-subtitle" data-i18n="filteringActive">Filtering unwanted content</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="masterToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <button id="openOptionsBtn" class="action-btn">
+                <span class="btn-icon">⚙️</span>
+                <span class="btn-text" data-i18n="customFiltersBtn">Custom Filters...</span>
+                <span class="btn-arrow">→</span>
+            </button>
+        </main>
+
+        <footer class="popup-footer">
+            <span data-i18n="popupFooterText">Universal cleaner for Reddit, X & LinkedIn</span> &bull;
+            <a href="../donations.html" target="_blank" class="footer-link" data-i18n="supportLink">💙 Support</a>
+        </footer>
+    </div>
+
+    <script src="../lib/i18n.js"></script>
+    <script src="../lib/storage.js"></script>
+    <script src="popup.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <!-- UniShield 128x128 Icon - Production Quality -->
+  <path d="M64 10C86 16 106 22 108 26C108 66 88 100 64 118C40 100 20 66 20 26C22 22 42 16 64 10Z" fill="#14B8A6"/>
+  <path d="M64 19C83 24 98 29.5 100 33C100 66 82 94 64 109C46 94 28 66 28 33C30 29.5 45 24 64 19Z" fill="#172554"/>
+  <path d="M40 38H88C89.5 38 90.5 39.5 89.5 41L70 66V82C70 83 69.5 84 68.5 84.5L64 87L59.5 84.5C58.5 84 58 83 58 82V66L38.5 41C37.5 39.5 38.5 38 40 38Z" fill="#FFFFFF"/>
+  <rect x="52" y="46" width="24" height="5" rx="2.5" fill="#14B8A6"/>
+</svg>

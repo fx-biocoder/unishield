@@ -1,0 +1,29 @@
+/* UniShield - LinkedIn Injected Elements Styles */
+
+.unishield-warning-banner,
+.bl-warning-banner {
+    transition: opacity 0.2s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.unishield-profile-warning {
+    transition: opacity 0.2s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.unishield-notes-panel,
+.bl-notes-panel {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.unishield-notes-panel input::placeholder,
+.unishield-notes-panel textarea::placeholder {
+    color: #777777 !important;
+}
+
+.bs-linkedin-hidden {
+    display: none !important;
+}

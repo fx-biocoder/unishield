@@ -1,0 +1,25 @@
+/* UniShield - Reddit Styles */
+
+/* Hidden elements (silent filtering - no DOM disruption) */
+.unishield-hidden,
+.unishield-sub-hidden,
+.unishield-promoted-hidden {
+  display: none !important;
+}
+
+/* Ensure parent article or wrappers containing hidden elements are also hidden cleanly */
+article:has(> .unishield-sub-hidden),
+article:has(> shreddit-post.unishield-sub-hidden),
+article:has(> .unishield-hidden),
+article:has(> .unishield-promoted-hidden) {
+  display: none !important;
+}
+
+/* Silently suppress feed when user visits a blocklisted subreddit page directly */
+body.unishield-blocked-subreddit-page shreddit-feed,
+body.unishield-blocked-subreddit-page [name="feed-container"],
+body.unishield-blocked-subreddit-page #main-content,
+body.unishield-blocked-subreddit-page main,
+body.unishield-blocked-subreddit-page .listing-page {
+  display: none !important;
+}

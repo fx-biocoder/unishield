@@ -1,0 +1,20 @@
+{
+  "name": "unishield",
+  "version": "1.0.0",
+  "description": "Universal Social Media Feed Cleaner & Distraction Shield for Reddit, X, and LinkedIn",
+  "scripts": {
+    "test": "node --test",
+    "build": "./build.sh"
+  },
+  "keywords": [
+    "browser-extension",
+    "privacy",
+    "reddit",
+    "twitter",
+    "linkedin",
+    "content-filter",
+    "adblock"
+  ],
+  "author": "",
+  "license": "GPL-3.0"
+}

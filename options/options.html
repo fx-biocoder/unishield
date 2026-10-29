@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="optionsPageTitle">UniShield - Settings & Filters</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="header-logo">
+                    <span class="logo-icon">🛡️</span>
+                    <div>
+                        <h2>UniShield</h2>
+                        <span class="version">v1.0.0</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="settings-reddit">
+                    <span class="nav-icon">🤖</span>
+                    <span data-i18n="navReddit">Reddit Filters</span>
+                </button>
+                <button class="nav-item" data-tab="settings-x">
+                    <span class="nav-icon">𝕏</span>
+                    <span data-i18n="navX">X (Twitter) Filters</span>
+                </button>
+                <button class="nav-item" data-tab="settings-linkedin">
+                    <span class="nav-icon">💼</span>
+                    <span data-i18n="navLinkedIn">LinkedIn Filters</span>
+                </button>
+                <div class="sidebar-divider"></div>
+                <button id="exportConfigBtn" class="nav-action-btn" type="button">
+                    <span class="nav-icon">💾</span>
+                    <span data-i18n="genExportBtn">Export Settings</span>
+                </button>
+                <label class="nav-action-btn" for="importConfigFile">
+                    <span class="nav-icon">📂</span>
+                    <span data-i18n="genImportBtn">Import Settings</span>
+                    <input type="file" id="importConfigFile" accept=".json" style="display: none;">
+                </label>
+                <div id="importStatus" class="sidebar-status-msg"></div>
+                <a href="../donations.html" target="_blank" class="nav-item support-nav-item">
+                    <span class="nav-icon">💙</span>
+                    <span data-i18n="supportDonateNav">Support & Donate</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="footer-info">
+                    <p class="footer-title" data-i18n="sidebarFooterTitle">UniShield Extension</p>
+                    <p class="footer-subtitle" data-i18n="sidebarFooterSubtitle">Open-source & tracker-free</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="content">
+
+            <!-- ================= REDDIT TAB ================= -->
+            <section id="settings-reddit" class="tab-content active">
+                <div class="header-card">
+                    <h1 data-i18n="redditTitle">Reddit Filters</h1>
+                    <p data-i18n="redditDesc">Detect bot accounts, suppress spam subreddits, and keep your Reddit feed authentic.</p>
+                </div>
+
+                <div class="stats-card reddit-stats">
+                    <h3 data-i18n="redditImpactTitle">Reddit Impact</h3>
+                    <p><span data-i18n="redditImpactDesc">Posts and comments hidden: </span><strong id="redditHiddenCount">0</strong></p>
+                </div>
+
+                <!-- Reddit Main Toggles -->
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="redditDetectBotPatterns">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="redditDetectBots">Detect Auto-Generated Bot Usernames</span>
+                            <span class="setting-desc" data-i18n="redditDetectBotsDesc">Flags accounts matching Reddit's default username pattern.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="redditRemovePromoted">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="redditHidePromoted">Hide Promoted Posts & Ads</span>
+                            <span class="setting-desc" data-i18n="redditHidePromotedDesc">Removes sponsored posts and promotional banners.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="redditRemoveRacism">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="redditHideRacism">Hide Racism & Hate Speech</span>
+                            <span class="setting-desc" data-i18n="redditHideRacismDesc">Silently hides posts and comments containing racist slurs or hate speech.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="redditRemoveGenderWar">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="redditHideGenderWar">Hide "Gender War" (Misogyny & Misandry)</span>
+                            <span class="setting-desc" data-i18n="redditHideGenderWarDesc">Silently hides toxic gender-war bait, misogynistic slurs, and misandrist attacks.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="redditRemoveEditorializedTitles">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="redditHideEditorialized">Hide Editorialized Titles</span>
+                            <span class="setting-desc" data-i18n="redditHideEditorializedDesc">Hides posts with sensationalized, multi-sentence editorialized titles.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reddit User Whitelist -->
+                <div class="list-section-card">
+                    <div class="section-title-wrap">
+                        <h3 data-i18n="redditWhitelistTitle">User Whitelist (Prevent False Positives)</h3>
+                        <p data-i18n="redditWhitelistDesc">Whitelist accounts to guarantee their posts and comments are never hidden.</p>
+                    </div>
+
+                    <div class="input-action-row">
+                        <input type="text" id="newRedditAllowlistInput"
+                            placeholder="Enter username (e.g., u/username or username)..."
+                            data-i18n-placeholder="redditWhitelistPlaceholder">
+                        <button id="addRedditAllowlistBtn" class="primary-btn" data-i18n="redditAddToWhitelist">Add to Whitelist</button>
+                    </div>
+
+                    <ul id="redditAllowlistUl" class="chips-list"></ul>
+                </div>
+
+                <!-- Subreddit Blocklist Section -->
+                <div class="list-section-card">
+                    <div class="section-title-wrap">
+                        <h3 data-i18n="redditSubBlocklistTitle">Subreddit Blocklist</h3>
+                        <p data-i18n="redditSubBlocklistDesc">Posts from these communities will be hidden automatically.</p>
+                    </div>
+
+                    <div class="input-action-row">
+                        <input type="text" id="newSubredditInput"
+                            placeholder="Enter subreddit (e.g., memes or r/news)..."
+                            data-i18n-placeholder="redditSubPlaceholder">
+                        <button id="addSubredditBtn" class="primary-btn" data-i18n="redditAddSubreddit">Add Subreddit</button>
+                    </div>
+
+                    <div class="lists-dual-grid">
+                        <div class="list-column">
+                            <h4 data-i18n="redditBuiltinDefaults">Built-in Defaults</h4>
+                            <ul id="defaultSubredditList" class="chips-list"></ul>
+                        </div>
+                        <div class="list-column">
+                            <h4 data-i18n="redditCustomBlocklist">Custom Blocklist</h4>
+                            <ul id="customSubredditList" class="chips-list"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Blocked Reddit Users -->
+                <div class="list-section-card">
+                    <div class="section-title-wrap">
+                        <h3 data-i18n="redditBlacklistTitle">Custom User Blacklist</h3>
+                        <p data-i18n="redditBlacklistDesc">Block specific accounts whose posts and comments you do not want to see.</p>
+                    </div>
+
+                    <div class="input-action-row">
+                        <input type="text" id="newRedditBlocklistInput"
+                            placeholder="Enter username (e.g., u/username or username)..."
+                            data-i18n-placeholder="redditBlacklistPlaceholder">
+                        <button id="addRedditBlocklistBtn" class="secondary-btn" data-i18n="redditBlockUser">Block User</button>
+                    </div>
+
+                    <ul id="redditBlocklistUl" class="chips-list"></ul>
+                </div>
+
+                <!-- Muted Words & Keywords on Reddit -->
+                <div class="list-section-card">
+                    <div class="section-title-wrap">
+                        <h3 data-i18n="redditMutedKeywordsTitle">Muted Words & Keywords on Reddit</h3>
+                        <p data-i18n="redditMutedKeywordsDesc">Hides posts and comments containing specific keywords or phrases.</p>
+                    </div>
+
+                    <div class="input-action-row">
+                        <input type="text" id="newRedditMutedWordInput"
+                            placeholder="Enter keyword or phrase to mute..."
+                            data-i18n-placeholder="redditKeywordPlaceholder">
+                        <button id="addRedditMutedWordBtn" class="primary-btn" data-i18n="redditAddKeyword">Add Keyword</button>
+                    </div>
+
+                    <ul id="redditMutedWordsUl" class="chips-list"></ul>
+                </div>
+            </section>
+
+
+            <!-- ================= X (TWITTER) TAB ================= -->
+            <section id="settings-x" class="tab-content">
+                <div class="header-card">
+                    <h1 data-i18n="xTitle">X (Twitter) Filters</h1>
+                    <p data-i18n="xDesc">Clean your timeline from blue checkmark spam, crypto scams, ragebait, and AI-generated replies.</p>
+                </div>
+
+                <div class="stats-card x-stats">
+                    <h3 data-i18n="xImpactTitle">X Impact</h3>
+                    <p><span data-i18n="xImpactDesc">Tweets and replies hidden: </span><strong id="xHiddenCount">0</strong></p>
+                </div>
+
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="xRemovePromoted">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="xHidePromoted">Hide Promoted Posts & Ads</span>
+                            <span class="setting-desc" data-i18n="xHidePromotedDesc">Removes sponsored ads and promoted tweets.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="xRemoveBlueCheckmark">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="xHideBlue">Hide Blue Checkmark Accounts</span>
+                            <span class="setting-desc" data-i18n="xHideBlueDesc">Hides tweets and replies from premium accounts with a blue checkmark.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="xRemoveGreyCheckmark">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="xHideGrey">Hide Grey Checkmark Accounts</span>
+                            <span class="setting-desc" data-i18n="xHideGreyDesc">Hides tweets from government and multilateral organization accounts.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="xRemoveGoldCheckmark">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="xHideGold">Hide Gold Checkmark Accounts</span>
+                            <span class="setting-desc" data-i18n="xHideGoldDesc">Hides tweets from verified corporate accounts.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="xRemoveAITweets">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="xHideAI">Hide AI-Generated Tweets & Bot Responses</span>
+                            <span class="setting-desc" data-i18n="xHideAIDesc">Filters low-effort generic replies and bot responses.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="xRemoveBroetryPosts">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="xHideBroetry">Hide "Broetry" & Engagement Bait</span>
+                            <span class="setting-desc" data-i18n="xHideBroetryDesc">Hides tweets with excessive single-line breaks and engagement bait hooks.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="xRemoveCryptoScams">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="xHideCrypto">Hide Potential Crypto Scams</span>
+                            <span class="setting-desc" data-i18n="xHideCryptoDesc">Hides memecoin promotions, guaranteed profit schemes, and crypto scams.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item slider-setting-item">
+                        <div class="setting-info full-width">
+                            <div class="slider-header-row">
+                                <span class="setting-name" data-i18n="xPoliticalFilterTitle">Political Content Strictness</span>
+                                <span id="xPoliticalLevelBadge" class="level-badge level-badge-0" data-i18n="xPoliticalLevel0">Do not hide anything</span>
+                            </div>
+                            <span class="setting-desc" data-i18n="xPoliticalFilterDesc">Set the strictness level for filtering political posts in your timeline.</span>
+
+                            <div class="range-slider-container">
+                                <div class="slider-track-wrap">
+                                    <input type="range" id="xPoliticalStrictness" min="0" max="2" step="1" value="0" aria-label="Political filter level">
+                                    <div class="slider-fill-bar" id="xPoliticalFillBar"></div>
+                                </div>
+                                <div class="range-ticks">
+                                    <button type="button" class="tick-step tick-0 active" data-step="0">
+                                        <span class="tick-dot"></span>
+                                        <span class="tick-label" data-i18n="xPoliticalLevel0">Do not hide anything</span>
+                                    </button>
+                                    <button type="button" class="tick-step tick-1" data-step="1">
+                                        <span class="tick-dot"></span>
+                                        <span class="tick-label" data-i18n="xPoliticalLevel1">Hide highly polarizing tweets</span>
+                                    </button>
+                                    <button type="button" class="tick-step tick-2" data-step="2">
+                                        <span class="tick-dot"></span>
+                                        <span class="tick-label" data-i18n="xPoliticalLevel2">Hide all political content</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="xRemoveRagebait">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="xHideRagebait">Hide Engagement Ragebait</span>
+                            <span class="setting-desc" data-i18n="xHideRagebaitDesc">Filters controversial posts engineered to provoke outrage.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="xRemoveRacism">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="xHideRacism">Hide Racism & Hate Speech</span>
+                            <span class="setting-desc" data-i18n="xHideRacismDesc">Silently hides tweets containing racist slurs or hate speech.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="xRemoveGenderWar">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="xHideGenderWar">Hide "Gender War" (Misogyny & Misandry)</span>
+                            <span class="setting-desc" data-i18n="xHideGenderWarDesc">Silently hides toxic gender-war bait, misogynistic, and misandrist attacks.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- X Muted Keywords Section -->
+                <div class="list-section-card">
+                    <div class="section-title-wrap">
+                        <h3 data-i18n="xMutedWordsTitle">Muted Words & Keywords on X</h3>
+                        <p data-i18n="xMutedWordsDesc">Hides tweets containing words or phrases from your list.</p>
+                    </div>
+
+                    <div class="input-action-row">
+                        <input type="text" id="newXMutedWordInput" placeholder="Enter word or phrase to mute..." data-i18n-placeholder="xMutedWordsPlaceholder">
+                        <button id="addXMutedWordBtn" class="primary-btn" data-i18n="xAddMutedWord">Add Muted Word</button>
+                    </div>
+
+                    <ul id="xMutedWordsUl" class="chips-list"></ul>
+                </div>
+            </section>
+
+
+            <!-- ================= LINKEDIN TAB ================= -->
+            <section id="settings-linkedin" class="tab-content">
+                <div class="header-card">
+                    <h1 data-i18n="liTitle">LinkedIn Filters</h1>
+                    <p data-i18n="liDesc">Clean your LinkedIn feed from sponsored clutter and broetry, filter jobs, and detect profile red flags.</p>
+                </div>
+
+                <div class="stats-card linkedin-stats">
+                    <h3 data-i18n="liImpactTitle">LinkedIn Impact</h3>
+                    <p><span data-i18n="liImpactDesc">Posts and jobs hidden: </span><strong id="linkedinHiddenCount">0</strong></p>
+                </div>
+
+                <!-- Feed Filters -->
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinRemovePromotedPosts">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liHidePromoted">Hide Promoted Posts & Ads</span>
+                            <span class="setting-desc" data-i18n="liHidePromotedDesc">Removes sponsored posts and promotional banners from your feed.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinRemoveSuggestedPosts">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liHideSuggested">Hide Suggested Posts</span>
+                            <span class="setting-desc" data-i18n="liHideSuggestedDesc">Removes suggested and recommended posts.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinRemoveByInteractions">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liHideInteractions">Hide Contact Interactions ("Liked by...", etc.)</span>
+                            <span class="setting-desc" data-i18n="liHideInteractionsDesc">Hides posts appearing only because contacts liked or commented on them.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinRemoveAIPosts">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liHideAI">Hide AI-Generated Posts</span>
+                            <span class="setting-desc" data-i18n="liHideAIDesc">Filters low-effort AI posts and generic engagement bait.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinRemoveBroetryPosts">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liHideBroetry">Hide "Broetry" & Engagement Bait</span>
+                            <span class="setting-desc" data-i18n="liHideBroetryDesc">Hides posts with excessive line breaks and engagement bait.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinRemovePostsWithEmojis">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liHideEmojis">Hide Posts with Emojis</span>
+                            <span class="setting-desc" data-i18n="liHideEmojisDesc">Hides posts containing emojis.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Job Filters -->
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinRemovePromotedJobs">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liHidePromotedJobs">Hide Promoted Jobs</span>
+                            <span class="setting-desc" data-i18n="liHidePromotedJobsDesc">Hides sponsored job postings from search results.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinJobAgeAlerts">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liHideOldJobs">Hide Old Job Postings</span>
+                            <span class="setting-desc" data-i18n="liHideOldJobsDesc">Hides job listings older than 30 days.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinJobRedFlags">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liJobRedFlags">Job Description Red Flag Warnings</span>
+                            <span class="setting-desc" data-i18n="liJobRedFlagsDesc">Warns when a job description contains concerning keywords.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Filters -->
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinDetectFakeProfiles">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liFakeProfiles">Suspicious Profile Warnings</span>
+                            <span class="setting-desc" data-i18n="liFakeProfilesDesc">Displays a warning when visiting suspicious or incomplete profiles.</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="linkedinEnableProfileNotes">
+                            <span class="slider"></span>
+                        </label>
+                        <div class="setting-info">
+                            <span class="setting-name" data-i18n="liProfileNotes">Private Notes & AI Photo Scanner</span>
+                            <span class="setting-desc" data-i18n="liProfileNotesDesc">Enables private local notes and photo scanner on profiles.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Muted Words & Companies Lists -->
+                <div class="lists-dual-grid">
+                    <div class="list-section-card">
+                        <div class="section-title-wrap">
+                            <h3 data-i18n="liMutedWordsTitle">Muted Words on LinkedIn</h3>
+                            <p data-i18n="liMutedWordsDesc">Hides feed posts containing words from your custom list.</p>
+                        </div>
+
+                        <div class="input-action-row small">
+                            <input type="text" id="newLinkedinKeywordInput" placeholder="Enter word to mute..." data-i18n-placeholder="liKeywordPlaceholder">
+                            <button id="addLinkedinKeywordBtn" class="primary-btn" data-i18n="liAddWord">Add Word</button>
+                        </div>
+
+                        <ul id="linkedinMutedWordsUl" class="chips-list"></ul>
+                    </div>
+
+                    <div class="list-section-card">
+                        <div class="section-title-wrap">
+                            <h3 data-i18n="liMutedCompaniesTitle">Muted Companies</h3>
+                            <p data-i18n="liMutedCompaniesDesc">Hides feed posts and updates from specific companies.</p>
+                        </div>
+
+                        <div class="input-action-row small">
+                            <input type="text" id="newLinkedinCompanyInput" placeholder="Enter company name..." data-i18n-placeholder="liCompanyPlaceholder">
+                            <button id="addLinkedinCompanyBtn" class="primary-btn" data-i18n="liAddCompany">Add Company</button>
+                        </div>
+
+                        <ul id="linkedinMutedCompaniesUl" class="chips-list"></ul>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="../lib/defaults.js"></script>
+    <script src="../lib/storage.js"></script>
+    <script src="../lib/i18n.js"></script>
+    <script src="options.js"></script>
+</body>
+
+</html>

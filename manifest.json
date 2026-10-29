@@ -1,0 +1,128 @@
+{
+  "manifest_version": 3,
+  "name": "UniShield - Universal Feed Cleaner",
+  "version": "1.0.0",
+  "description": "Universal content filter and bot blocker for Reddit, X (Twitter), and LinkedIn",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.reddit.com/*",
+    "*://*.x.com/*",
+    "*://*.twitter.com/*",
+    "*://*.linkedin.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.reddit.com/*"
+      ],
+      "js": [
+        "lib/defaults.js",
+        "lib/detector.js",
+        "lib/storage.js",
+        "lib/i18n.js",
+        "content/reddit/reddit.js"
+      ],
+      "css": [
+        "content/reddit/reddit.css"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "*://*.x.com/*",
+        "*://*.twitter.com/*"
+      ],
+      "js": [
+        "lib/defaults.js",
+        "lib/detector.js",
+        "lib/storage.js",
+        "lib/i18n.js",
+        "content/x/x.js"
+      ],
+      "css": [
+        "content/x/x.css"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "*://*.linkedin.com/",
+        "*://*.linkedin.com/feed*",
+        "*://*.linkedin.com/feed/*"
+      ],
+      "js": [
+        "lib/defaults.js",
+        "lib/storage.js",
+        "lib/i18n.js",
+        "content/linkedin/feed.js"
+      ],
+      "css": [
+        "content/linkedin/linkedin.css"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "*://*.linkedin.com/*",
+        "*://*.linkedin.com/jobs*",
+        "*://*.linkedin.com/jobs/*"
+      ],
+      "js": [
+        "lib/defaults.js",
+        "lib/storage.js",
+        "lib/i18n.js",
+        "content/linkedin/jobs.js"
+      ],
+      "css": [
+        "content/linkedin/linkedin.css"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "*://*.linkedin.com/in/*"
+      ],
+      "js": [
+        "lib/defaults.js",
+        "lib/storage.js",
+        "lib/i18n.js",
+        "content/linkedin/profile.js"
+      ],
+      "css": [
+        "content/linkedin/linkedin.css"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "UniShield Settings",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "background/service_worker.js"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "unishield@extension"
+    }
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  }
+}

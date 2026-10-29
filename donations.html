@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="donationsPageTitle">Support UniShield</title>
+    <link rel="stylesheet" href="styles/donations.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <span class="header-icon">🛡️</span>
+            <h1 data-i18n="donationsHeaderTitle">Support UniShield</h1>
+            <p data-i18n="donationsHeaderSubtitle">Help keep this universal feed cleaner free, tracker-free, and continuously updated</p>
+        </header>
+        
+        <main class="content">
+            <section class="section">
+                <h2 data-i18n="donationsWhyTitle">🤝 Why Support?</h2>
+                <p data-i18n="donationsWhyDesc">UniShield is a free, privacy-first, open-source extension that restores clean, authentic feeds on Reddit, X (Twitter), and LinkedIn. Your support helps me:</p>
+                <ul class="benefits-list">
+                    <li data-i18n="donationsWhy1">Continuously adapt DOM selectors as Reddit, X, and LinkedIn update their web interfaces</li>
+                    <li data-i18n="donationsWhy2">Expand and maintain neutral, comprehensive regex filters for hate speech, scams, and bot patterns</li>
+                    <li data-i18n="donationsWhy3">Keep the extension 100% free and open-source with zero trackers or telemetry</li>
+                    <li data-i18n="donationsWhy4">Maintain high-speed silent performance so your browsing remains smooth and uninterrupted</li>
+                </ul>
+            </section>
+            
+            <section class="section">
+                <h2 data-i18n="donationsWaysTitle">💰 Ways to Contribute</h2>
+                <div class="donation-methods">
+                    <div class="donation-method" data-method="paypal">
+                        <div>
+                            <span class="icon">💳</span>
+                            <h3>PayPal</h3>
+                            <p data-i18n="donationsPaypalDesc">One-time or recurring contributions from anywhere in the world</p>
+                        </div>
+                        <button class="cta-button" data-action="paypal" data-i18n="donationsPaypalBtn">Donate via PayPal</button>
+                    </div>
+                    
+                    <div class="donation-method" data-method="kofi">
+                        <div>
+                            <span class="icon">☕</span>
+                            <h3>Ko-Fi</h3>
+                            <p data-i18n="donationsKofiDesc">Buy me a coffee to support ongoing development</p>
+                        </div>
+                        <button class="cta-button kofi-btn" data-action="kofi" data-i18n="donationsKofiBtn">Support on Ko-Fi</button>
+                    </div>
+                    
+                    <div class="donation-method" data-method="mercadopago">
+                        <div>
+                            <span class="icon">🇦🇷</span>
+                            <h3>Mercado Pago</h3>
+                            <p data-i18n="donationsMpDesc">Para colaborar fácilmente desde Argentina</p>
+                        </div>
+                        <button class="cta-button mp-btn" data-action="mercadopago" data-i18n="donationsMpBtn">Donar con MP</button>
+                    </div>
+                    
+                    <div class="donation-method" data-method="github">
+                        <div>
+                            <span class="icon">⭐</span>
+                            <h3>GitHub Sponsors</h3>
+                            <p data-i18n="donationsGhDesc">Become a recurring sponsor directly through GitHub</p>
+                        </div>
+                        <a href="https://github.com/sponsors/fx-biocoder" class="cta-button gh-btn" target="_blank" rel="noopener noreferrer" data-i18n="donationsGhBtn">Sponsor on GitHub</a>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="section">
+                <h2 data-i18n="donationsOtherTitle">🚀 Other Ways to Help</h2>
+                <div class="other-ways-box">
+                    <p data-i18n="donationsOtherDesc">Can't donate right now? No problem at all! You can make a huge impact by:</p>
+                    <ul class="benefits-list">
+                        <li data-i18n="donationsOther1">Giving the project a star on GitHub</li>
+                        <li data-i18n="donationsOther2">Reporting broken selectors or false positives</li>
+                        <li data-i18n="donationsOther3">Sharing UniShield with friends and communities</li>
+                        <li data-i18n="donationsOther4">Submitting code or documentation improvements</li>
+                    </ul>
+                    <div class="other-ways-actions">
+                        <a href="https://github.com/fx-biocoder" class="github-link" target="_blank" rel="noopener noreferrer">
+                            <span>⭐</span>
+                            <span data-i18n="donationsStarGh">Star on GitHub</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer class="footer">
+            <p data-i18n="donationsFooterThanks">Thank you for using and supporting UniShield! 🙏</p>
+            <span class="footer-sub" data-i18n="donationsFooterCrafted">Crafted with care for a cleaner, quieter web.</span>
+        </footer>
+    </div>
+
+    <script src="lib/i18n.js"></script>
+    <script src="donations.js"></script>
+</body>
+</html>
