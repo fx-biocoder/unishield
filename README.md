@@ -87,7 +87,7 @@ By turning social media back into a quiet utility rather than an emotional battl
 
 ## Privacy Architecture
 
-UniShield is built from the ground up to respect human dignity and privacy:
+UniShield is built from the ground up to respect privacy:
 - **100% Client-Side Execution:** Every detection rule, list lookup, and filtering action executes strictly inside your browser.
 - **Zero Network Requests:** UniShield never sends your browsing history, timelines, or personal data to any external server.
 - **No Analytics or Trackers:** No telemetry, no usage analytics, no third-party scripts.
