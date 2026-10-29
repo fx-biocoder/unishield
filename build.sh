@@ -28,12 +28,22 @@ zip -qr "dist/unishield_chrome_v$VERSION.zip" \
 echo "Packaging for Firefox..."
 cp manifest.json manifest.original.json
 
-# Inject background.scripts: ["background/service_worker.js"]
+# Inject background.scripts: ["background/service_worker.js"], remove service_worker and ensure data_collection_permissions
 python3 -c '
 import json
 with open("manifest.json", "r") as f:
     d = json.load(f)
-d["background"]["scripts"] = ["background/service_worker.js"]
+
+# Firefox uses background.scripts, not service_worker
+if "background" in d:
+    d["background"].pop("service_worker", None)
+    d["background"]["scripts"] = ["background/service_worker.js"]
+
+# Ensure browser_specific_settings.gecko.data_collection_permissions
+gecko = d.setdefault("browser_specific_settings", {}).setdefault("gecko", {})
+gecko["id"] = "unishield@extension"
+gecko["data_collection_permissions"] = { "required": ["none"] }
+
 with open("manifest.json", "w") as f:
     json.dump(d, f, indent=2)
 '

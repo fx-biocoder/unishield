@@ -116,7 +116,12 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "unishield@extension"
+      "id": "unishield@extension",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
     }
   },
   "icons": {
