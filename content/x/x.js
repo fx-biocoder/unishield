@@ -93,7 +93,7 @@
     }
 
     /**
-     * Checks if a tweet is an advertisement/promoted efficiently
+     * Checks if a tweet is an advertisement/promoted
      */
     function isPromotedTweet(tweet) {
         // 1. Placement tracking attribute
@@ -129,7 +129,7 @@
             if (icon.matches(SELECTORS.goldCheckmark)) return 'gold';
             if (icon.matches(SELECTORS.greyCheckmark)) return 'grey';
             if (icon.matches(SELECTORS.blueCheckmark)) return 'blue';
-        } catch (e) {}
+        } catch (e) { }
 
         const fill = icon.getAttribute('fill') || (path && path.getAttribute('fill')) || '';
         if (fill.includes('234, 179, 8') || fill.toLowerCase().includes('#eab308') || fill.toLowerCase().includes('#ffd700')) {
@@ -211,7 +211,7 @@
         if (!isExtensionActive()) return;
         if (tweet.hasAttribute('data-bs-processed')) return;
 
-        // 1. Promoted / Ads filter (very cheap)
+        // 1. Promoted / Ads filter
         if (config.x.removePromoted !== false && isPromotedTweet(tweet)) {
             hideTweet(tweet, 'promoted');
             return;
