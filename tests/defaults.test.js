@@ -35,6 +35,9 @@ describe('UniShield.Defaults and Pattern Registries', () => {
     assert.strictEqual(testMatch('Drop a comment below and share your thoughts!'), true);
     assert.strictEqual(testMatch('Comenta debajo qué opinas'), true);
     assert.strictEqual(testMatch('Totally normal sentence with no triggers'), false);
+    assert.strictEqual(testMatch('Check out this well-known café near the park'), false);
+    assert.strictEqual(testMatch('I was bombarded with emails today'), false);
+    assert.strictEqual(testMatch('AI generated with em-dash — look here'), true);
   });
 
   it('detects Crypto spam markers', () => {
@@ -42,6 +45,8 @@ describe('UniShield.Defaults and Pattern Registries', () => {
     const testMatch = (str) => cryptoPatterns.some(p => p.test(str));
     assert.strictEqual(testMatch('Minting free NFT solana whitelist now!'), true);
     assert.strictEqual(testMatch('Buy Bitcoin btc now guaranteed 10x profit'), true);
+    assert.strictEqual(testMatch('Buy 5 ETH right now'), true);
+    assert.strictEqual(testMatch('A discussion on ethics and philosophy'), false);
     assert.strictEqual(testMatch('Just had coffee this morning'), false);
   });
 
@@ -53,5 +58,189 @@ describe('UniShield.Defaults and Pattern Registries', () => {
     assert.ok(liPatterns.suggestedWords.includes('Sugerido'));
     assert.ok(liPatterns.broetryRegex.test('Do you agree?'));
     assert.ok(liPatterns.broetryRegex.test('¿Estás de acuerdo?'));
+  });
+
+  it('detects genderWar, misandry, and misogyny/manosphere patterns', () => {
+    const gwPatterns = Defaults.patterns.genderWar;
+    const testMatch = (str) => gwPatterns.some(p => p.test(str));
+
+    // Testing chaboncito / chaboncitos
+    assert.strictEqual(testMatch('Ese chaboncito no para de molestar'), true);
+    assert.strictEqual(testMatch('Son unos chaboncitos insoportables'), true);
+
+    // Testing pajín / pajines
+    assert.strictEqual(testMatch('Lleno de pajines en los mensajes'), true);
+    assert.strictEqual(testMatch('Un típico pajín de reddit'), true);
+
+    // Testing generalized hostility
+    assert.strictEqual(testMatch('Los tipos son un asco'), true);
+    assert.strictEqual(testMatch('Los chabones son todos unos forros'), true);
+    assert.strictEqual(testMatch('Son todos unos pajeros'), true);
+    assert.strictEqual(testMatch('Me dan asco los hombres'), true);
+    assert.strictEqual(testMatch('Odio a los chabones'), true);
+    assert.strictEqual(testMatch('No se salva ni uno de estos flacos'), true);
+
+    // Testing misogyny, MRA, and manosphere dogwhistles
+    assert.strictEqual(testMatch('AWALT is real, look at her actions'), true);
+    assert.strictEqual(testMatch('She got away with it thanks to her pussy pass'), true);
+    assert.strictEqual(testMatch('We live in a gynocentric society'), true);
+    assert.strictEqual(testMatch('Denunciando el ginocentrismo institucional'), true);
+    assert.strictEqual(testMatch('She spent her youth on the cock carousel'), true);
+    assert.strictEqual(testMatch('Carrusel de pollas interminable'), true);
+    assert.strictEqual(testMatch('She hit the wall at 30'), true);
+    assert.strictEqual(testMatch('The wall is undefeated'), true);
+    assert.strictEqual(testMatch('El muro no perdona a nadie'), true);
+    assert.strictEqual(testMatch('Las mujeres chocaron contra el muro'), true);
+    assert.strictEqual(testMatch('She monkey branching to another guy'), true);
+    assert.strictEqual(testMatch('He was divorce raped in court'), true);
+    assert.strictEqual(testMatch('Beware of spermjacking traps'), true);
+    assert.strictEqual(testMatch('Women lack empathy for men'), true);
+    assert.strictEqual(testMatch('Las mujeres no tienen empatía'), true);
+    assert.strictEqual(testMatch('Women are incapable of love'), true);
+    assert.strictEqual(testMatch('Women never take accountability'), true);
+    assert.strictEqual(testMatch('Hypergamous behavior on dating apps'), true);
+    assert.strictEqual(testMatch('Conductas hipergámicas evidentes'), true);
+    assert.strictEqual(testMatch('Calculating her sexual market value'), true);
+    assert.strictEqual(testMatch('MGTOW is the only logical answer'), true);
+    assert.strictEqual(testMatch('Alpha fux beta bux dynamics'), true);
+    assert.strictEqual(testMatch('Surrounded by desperate beta orbiters'), true);
+    assert.strictEqual(testMatch('He is a total cuck for doing that'), true);
+
+    // Testing false positives
+    assert.strictEqual(testMatch('El chico fue a comprar pan al supermercado'), false);
+    assert.strictEqual(testMatch('Un grupo de hombres y mujeres trabajando juntos'), false);
+    assert.strictEqual(testMatch('She hit the ball over the wall in baseball'), false);
+    assert.strictEqual(testMatch('I walked near the wall of the museum'), false);
+    assert.strictEqual(testMatch('The monkey jumped from the tree branch'), false);
+    assert.strictEqual(testMatch('She took accountability for the project failure'), false);
+  });
+
+  it('detects anti-police authority and political polarization patterns', () => {
+    const ragePatterns = Defaults.patterns.ragebait;
+    const testMatch = (str) => ragePatterns.some(p => p.test(str));
+
+    // Anti-police authority (English & Spanish)
+    assert.strictEqual(testMatch('ACAB all day every day'), true);
+    assert.strictEqual(testMatch('Exposing corrupt cops in the department'), true);
+    assert.strictEqual(testMatch('Aca viene la yuta a reprimir'), true);
+    assert.strictEqual(testMatch('Ese tipo es un hijo de yuta'), true);
+    assert.strictEqual(testMatch('Miren como escapa la gorra'), true);
+    assert.strictEqual(testMatch('Ahi viene el cobani a pedir coima'), true);
+    assert.strictEqual(testMatch('Sos un tremendo rati y ortiba'), true);
+    assert.strictEqual(testMatch('Estudia no seas policia decia la pared'), true);
+
+    // Political polarization from Argentine subreddits
+    assert.strictEqual(testMatch('Son todos una manga de choriplaneros'), true);
+    assert.strictEqual(testMatch('Este periodista es un tremendo ensobrado de la pauta'), true);
+    assert.strictEqual(testMatch('Opereta armada por el troll center'), true);
+    assert.strictEqual(testMatch('Operando desde el call center oficialista'), true);
+    assert.strictEqual(testMatch('La casta politica nos sigue robando'), true);
+    assert.strictEqual(testMatch('Típico comentario de gorila'), true);
+    assert.strictEqual(testMatch('No le den bola a este militonto'), true);
+
+    // False positives check
+    assert.strictEqual(testMatch('Me compre una gorra deportiva azul'), false);
+    assert.strictEqual(testMatch('Receta tradicional de polenta con salsa'), false);
+  });
+
+  it('detects religious discrimination and anti-religious hostility patterns', () => {
+    const relPatterns = Defaults.patterns.religiousDiscrimination;
+    const testMatch = (str) => relPatterns.some(p => p.test(str));
+
+    // Also verify they are included in racism / universal hate-speech
+    const hatePatterns = Defaults.patterns.racism;
+    const testHateMatch = (str) => hatePatterns.some(p => p.test(str));
+
+    // Sky daddy / mocked deities targeting believers
+    assert.strictEqual(testMatch('Praying to your invisible sky daddy won\'t save you'), true);
+    assert.strictEqual(testMatch('These skydaddy worshipers are embarrassing'), true);
+    assert.strictEqual(testMatch('Siguen rezándole a su amigo imaginario en el cielo'), true);
+    assert.strictEqual(testMatch('Esperando señales del barbudo del cielo'), true);
+
+    // Derogatory labels for Christians and believers (English & Spanish)
+    assert.strictEqual(testMatch('Another obnoxious bible thumper on the street corner'), true);
+    assert.strictEqual(testMatch('A typical bible basher screaming at college students'), true);
+    assert.strictEqual(testMatch('Online fundies trying to ban science books'), true);
+    assert.strictEqual(testMatch('He acts like a complete jesus freak'), true);
+    assert.strictEqual(testMatch('Watch out for those god botherers knocking on doors'), true);
+    assert.strictEqual(testMatch('The rise of christofascists in local politics'), true);
+    assert.strictEqual(testMatch('No le hagan caso a este creyentonto'), true);
+    assert.strictEqual(testMatch('Un rebaño de chupacirios en la procesión'), true);
+    assert.strictEqual(testMatch('Ese político es un tragahostias hipócrita'), true);
+    assert.strictEqual(testMatch('Típico comportamiento de meapilas'), true);
+
+    // Islamophobic slurs and hate speech
+    assert.strictEqual(testMatch('Calling immigrants ragheads in the thread'), true);
+    assert.strictEqual(testMatch('Anti-Muslim post calling them towelheads'), true);
+    assert.strictEqual(testMatch('They shouted that all muslims are terrorists'), true);
+    assert.strictEqual(testMatch('Ese comentario islamofascista es inaceptable'), true);
+    assert.strictEqual(testMatch('Follacabras sin educación'), true);
+
+    // Antisemitic tropes: extermination, Holocaust apology, expulsion, and greed
+    assert.strictEqual(testMatch('They posted that Hitler was right all along'), true);
+    assert.strictEqual(testMatch('Dicen que Hitler tenía razón'), true);
+    assert.strictEqual(testMatch('We must finish what Hitler started'), true);
+    assert.strictEqual(testMatch('Quieren terminar lo que empezó Hitler'), true);
+    assert.strictEqual(testMatch('Shouting gas the jews in the chat'), true);
+    assert.strictEqual(testMatch('Muerte a los judíos gritaban en la marcha'), true);
+    assert.strictEqual(testMatch('Matar a todos los judíos era su consigna'), true);
+    assert.strictEqual(testMatch('Los judíos al horno decían los antisemitas'), true);
+    assert.strictEqual(testMatch('Al horno los judíos pusieron en el grafiti'), true);
+    assert.strictEqual(testMatch('Demanding to expel the Jews from our borders'), true);
+    assert.strictEqual(testMatch('Hay que expulsar a los judíos del país'), true);
+    assert.strictEqual(testMatch('Echar a los judíos de nuestra nación'), true);
+    assert.strictEqual(testMatch('They were expelled from 109 countries for a reason'), true);
+    assert.strictEqual(testMatch('Fueron expulsados de 109 países a lo largo de la historia'), true);
+    assert.strictEqual(testMatch('Calling them greedy jews who steal money'), true);
+    assert.strictEqual(testMatch('Típica muestra de codicia judía'), true);
+    assert.strictEqual(testMatch('Ese banquero es un judío codicioso'), true);
+    assert.strictEqual(testMatch('Condenando la supuesta usura judía en su panfleto'), true);
+    assert.strictEqual(testMatch('Son unos judíos usureros'), true);
+    assert.strictEqual(testMatch('Los judíos ratas que manejan todo'), true);
+    assert.strictEqual(testMatch('Calling them jewish rats on social media'), true);
+    assert.strictEqual(testMatch('Conspiracy claiming Jews control the banks'), true);
+    assert.strictEqual(testMatch('Asegura que los judíos controlan el dinero mundial'), true);
+    assert.strictEqual(testMatch('Laughing while counting their shekels'), true);
+    assert.strictEqual(testMatch('All for shekels they don\'t care about anyone else'), true);
+    assert.strictEqual(testMatch('Todo por los shekels dijo en Twitter'), true);
+
+    // Dehumanization: mental illness, disease, cancer, subhumans, parasites
+    assert.strictEqual(testMatch('Religion is a mental illness that harms society'), true);
+    assert.strictEqual(testMatch('Believing in god is a mental illness according to him'), true);
+    assert.strictEqual(testMatch('La religión es una enfermedad mental que debe erradicarse'), true);
+    assert.strictEqual(testMatch('Creer en dios es de retrasados'), true);
+    assert.strictEqual(testMatch('Religious people are parasites living off taxes'), true);
+    assert.strictEqual(testMatch('Los religiosos son parásitos de la sociedad'), true);
+    assert.strictEqual(testMatch('These religious nutjobs are taking over the school board'), true);
+    assert.strictEqual(testMatch('Ese tipo es de los loquitos de dios'), true);
+    assert.strictEqual(testMatch('Christianity is a death cult obsessed with the end times'), true);
+    assert.strictEqual(testMatch('El islam es un culto a la muerte'), true);
+
+    // Blanket accusations against clergy
+    assert.strictEqual(testMatch('All priests are pedophiles and should be locked up'), true);
+    assert.strictEqual(testMatch('Todos los curas son pedófilos dijo en la televisión'), true);
+    assert.strictEqual(testMatch('La iglesia pedófila encubriendo delitos'), true);
+
+    // Check integration in universal hate speech (racism list)
+    assert.strictEqual(testHateMatch('Praying to your invisible sky daddy won\'t save you'), true);
+    assert.strictEqual(testHateMatch('No le hagan caso a este creyentonto'), true);
+
+    // False positives check
+    assert.strictEqual(testMatch('The blue sky was clear this morning'), false);
+    assert.strictEqual(testMatch('My daddy took me fishing at the lake'), false);
+    assert.strictEqual(testMatch('I am reading a passage from the Bible for history class'), false);
+    assert.strictEqual(testMatch('Christianity and Islam are major world religions'), false);
+    assert.strictEqual(testMatch('The church service begins at 10 AM on Sunday'), false);
+    assert.strictEqual(testMatch('Mental illness affects millions of people worldwide'), false);
+    assert.strictEqual(testMatch('We visited the historic Catholic cathedral in Toledo'), false);
+    assert.strictEqual(testMatch('The priest gave a sermon on charity and peace'), false);
+    assert.strictEqual(testMatch('A study on the sociology of religion in modern society'), false);
+    assert.strictEqual(testMatch('He donated to the local Christian charity foundation'), false);
+    assert.strictEqual(testMatch('Muslim families celebrating the end of Ramadan'), false);
+    assert.strictEqual(testMatch('Freedom of religion is protected by constitutional law'), false);
+    assert.strictEqual(testMatch('The currency of Israel is the new Israeli shekel'), false);
+    assert.strictEqual(testMatch('Jewish culture, cuisine, and traditions in Latin America'), false);
+    assert.strictEqual(testMatch('The museum exhibited artifacts from 109 different ancient cultures'), false);
+    assert.strictEqual(testMatch('Rats and mice are common rodents found in urban areas'), false);
   });
 });

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "UniShield - Universal Feed Cleaner",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Universal content filter and bot blocker for Reddit, X (Twitter), and LinkedIn",
   "permissions": [
     "storage",
@@ -66,9 +66,7 @@
     },
     {
       "matches": [
-        "*://*.linkedin.com/*",
-        "*://*.linkedin.com/jobs*",
-        "*://*.linkedin.com/jobs/*"
+        "*://*.linkedin.com/*"
       ],
       "js": [
         "lib/defaults.js",

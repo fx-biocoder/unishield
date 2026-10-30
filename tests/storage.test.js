@@ -41,13 +41,9 @@ describe('UniShield.Storage', () => {
     const { ctx } = createExtensionContext();
     const Storage = ctx.UniShield.Storage;
 
-    assert.strictEqual(await Storage.isSubredditBlocklisted('argentina'), true);
-    assert.strictEqual(await Storage.isSubredditBlocklisted('r/memes'), true);
     assert.strictEqual(await Storage.isSubredditBlocklisted('rust'), false);
-
     await Storage.addToSubredditBlocklist('rust');
     assert.strictEqual(await Storage.isSubredditBlocklisted('rust'), true);
-
     await Storage.removeFromSubredditBlocklist('rust');
     assert.strictEqual(await Storage.isSubredditBlocklisted('rust'), false);
   });

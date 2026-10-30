@@ -12,7 +12,14 @@
   let observer = null;
   let pageStats = { blocked: 0 };
   let scanPending = false;
+  let pendingTargets = new Set();
   let spaListenersInitialized = false;
+
+  // Cached in-memory sets for O(1) synchronous lookups
+  let blockedSubredditsSet = new Set();
+  let allowedRedditUsersSet = new Set();
+  let blockedRedditUsersSet = new Set();
+  let compiledMutedKeywords = [];
 
   // New Reddit (Shreddit) and Old Reddit selectors
   const selectors = {
@@ -40,19 +47,33 @@
   }
 
   /**
-   * Checks if current page is a blocked subreddit and suppresses feed
+   * Updates in-memory lookup sets from configuration
    */
-  async function checkPageSubreddit() {
+  function updateLookupCaches() {
+    const storage = getStorage();
+    const cleanFn = (storage && storage.cleanSubredditName) ||
+      function(n) { return n ? n.replace(/^\/?r\//i, '').replace(/\/+$/, '').toLowerCase().trim() : ''; };
+
+    const subs = (config && config.reddit && config.reddit.subredditBlocklist) || [];
+    blockedSubredditsSet = new Set(subs.map(cleanFn).filter(Boolean));
+
+    const allowList = (config && config.reddit && config.reddit.userAllowlist) || [];
+    allowedRedditUsersSet = new Set(allowList.map(u => (u || '').toLowerCase().trim()).filter(Boolean));
+
+    const blockList = (config && config.reddit && config.reddit.userBlocklist) || [];
+    blockedRedditUsersSet = new Set(blockList.map(u => (u || '').toLowerCase().trim()).filter(Boolean));
+
+    compileMutedKeywords();
+  }
+
+  /**
+   * Checks if current page is a blocked subreddit and suppresses feed synchronously
+   */
+  function checkPageSubreddit() {
     if (!isExtensionActive()) return;
     const pageSub = getCurrentPageSubreddit();
-    const storage = getStorage();
-    if (pageSub && storage) {
-      const isBlocked = await storage.isSubredditBlocklisted(pageSub);
-      if (isBlocked) {
-        document.body.classList.add('unishield-blocked-subreddit-page');
-      } else {
-        document.body.classList.remove('unishield-blocked-subreddit-page');
-      }
+    if (pageSub && blockedSubredditsSet.has(pageSub)) {
+      document.body.classList.add('unishield-blocked-subreddit-page');
     } else {
       document.body.classList.remove('unishield-blocked-subreddit-page');
     }
@@ -66,10 +87,11 @@
     if (storage) {
       config = await storage.getConfig();
     }
+    updateLookupCaches();
 
     const isEnabled = config && config.global && config.global.enabled !== false && config.reddit && config.reddit.enabled !== false;
     if (isEnabled) {
-      await checkPageSubreddit();
+      checkPageSubreddit();
       runFullScan();
       startObserver();
       setupSpaListeners();
@@ -102,7 +124,8 @@
   }
 
   /**
-   * Helper to extract visible text from Reddit post or comment
+   * Helper to extract visible text from Reddit post or comment,
+   * avoiding quadratic nesting by skipping child comments/posts.
    */
   function extractTextContent(element) {
     if (!element) return '';
@@ -115,11 +138,19 @@
 
     const textNodes = element.querySelectorAll('[slot="title"], [slot="text-body"], [slot="comment"], h1, h2, a[data-testid="post-title"], [data-testid="comment"], .usertext-body, p');
     if (textNodes.length > 0) {
-      textNodes.forEach(node => {
+      for (let i = 0; i < textNodes.length; i++) {
+        const node = textNodes[i];
+        // Exclude nodes belonging to child comments or posts to avoid quadratic complexity
+        const closestItem = node.closest ? node.closest(selectors.comments + ', ' + selectors.posts) : null;
+        if (closestItem && closestItem !== element) {
+          continue;
+        }
         text += (node.textContent || '') + ' ';
-      });
+      }
     } else {
-      text += (element.textContent || '') + ' ';
+      if (!element.querySelector(selectors.comments)) {
+        text += (element.textContent || '') + ' ';
+      }
     }
 
     return text.trim();
@@ -148,9 +179,7 @@
   /**
    * Detects political content farm / troll center editorialized titles:
    * 1. Multi-sentence editorialized titles (2-4 sentences)
-   *    Example: "Flávio Bolsonaro habría entrado... No se sabe dónde está. Eleonora Cole describe... Como siempre Milei..."
    * 2. Excessive Title Case / Capitalized Words pattern
-   *    Example: "This Post Has To Be Blocked As Well"
    */
   function isEditorializedTitle(title) {
     if (!title || typeof title !== 'string') return false;
@@ -158,7 +187,6 @@
     if (text.length < 15) return false;
 
     // Pattern 1: Excessive Title Case / Capitalized words (tolerating occasional lowercase words)
-    // e.g. "This Post Has To Be Blocked As Well"
     const words = text.split(/\s+/).map(function(w) {
       return w.replace(/^[^a-zA-Z\u00C0-\u024F]+|[^a-zA-Z\u00C0-\u024F]+$/g, '');
     }).filter(function(w) { return w.length > 0; });
@@ -215,6 +243,68 @@
   }
 
   /**
+   * Precompiles muted keywords once for O(1) matching per item
+   */
+  function compileMutedKeywords() {
+    const keywords = (config && config.reddit && config.reddit.mutedKeywords) || [];
+    compiledMutedKeywords = keywords.map(kw => {
+      const cleanKw = (kw || '').trim();
+      if (!cleanKw) return null;
+      const normKw = normalizeText(cleanKw);
+      if (!normKw) return null;
+
+      const escapedKw = normKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      let wordBoundaryRx = null;
+      try {
+        wordBoundaryRx = new RegExp('(^|[\\s\\p{P}\\p{S}])' + escapedKw + '([\\s\\p{P}\\p{S}]|$)', 'iu');
+      } catch (e) {}
+
+      const leetMap = {
+        'a': '[a@4áàâä]', 'e': '[e3éèêë]', 'i': '[i1!íìîï|]', 'o': '[o0óòôö]',
+        'u': '[uúùûü]', 's': '[s5$]', 't': '[t7+]', 'c': '[c(k]', 'b': '[b8]'
+      };
+      const pattern = normKw.split('').map(function(char) {
+        const lower = char.toLowerCase();
+        if (/\s/.test(char)) return '[\\s\\W_]+';
+        return leetMap[lower] || (/[a-z0-9]/i.test(char) ? char : '\\' + char);
+      }).join('[\\W_\\s]*');
+
+      let leetRx = null;
+      try {
+        leetRx = new RegExp('(^|[\\s\\p{P}\\p{S}])' + pattern + '([\\s\\p{P}\\p{S}]|$)', 'iu');
+      } catch (e) {}
+
+      return {
+        raw: cleanKw,
+        norm: normKw,
+        wordBoundaryRx,
+        leetRx
+      };
+    }).filter(Boolean);
+  }
+
+  /**
+   * Fast check against all precompiled muted keywords
+   */
+  function matchesAnyMutedKeyword(rawText) {
+    if (!rawText || compiledMutedKeywords.length === 0) return false;
+    const normText = normalizeText(rawText);
+
+    for (let i = 0; i < compiledMutedKeywords.length; i++) {
+      const item = compiledMutedKeywords[i];
+      if (item.wordBoundaryRx) {
+        if (item.wordBoundaryRx.test(normText)) return true;
+      } else if (normText.includes(item.norm)) {
+        return true;
+      }
+      if (item.leetRx) {
+        if (item.leetRx.test(rawText) || item.leetRx.test(normText)) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Matches keyword against text, tolerant to casing, diacritics, and special characters / obfuscations
    */
   function matchesKeyword(text, keyword) {
@@ -263,16 +353,22 @@
   }
 
   /**
-   * Helper to extract subreddit name from a post or comment element
+   * Helper to extract subreddit name from a post or comment element efficiently
    */
   function extractSubreddit(element) {
     if (!element) return null;
+
+    // 1. Page subreddit is the fastest and most accurate for single-post views or subreddit feeds
+    const pageSub = getCurrentPageSubreddit();
+    if (pageSub) {
+      return pageSub;
+    }
 
     const storage = getStorage();
     const cleanFn = (storage && storage.cleanSubredditName) ||
       function(n) { return n ? n.replace(/^\/?r\//i, '').replace(/\/+$/, '').toLowerCase().trim() : ''; };
 
-    // 1. Direct attributes on element
+    // 2. Direct attributes on element
     const attrNames = [
       'subreddit-prefixed-name',
       'subreddit-name',
@@ -283,7 +379,8 @@
       'data-subreddit-prefixed-name'
     ];
 
-    for (const attr of attrNames) {
+    for (let i = 0; i < attrNames.length; i++) {
+      const attr = attrNames[i];
       if (element.hasAttribute && element.hasAttribute(attr)) {
         const val = element.getAttribute(attr);
         if (val) {
@@ -295,9 +392,27 @@
       }
     }
 
-    // 2. Permalink / URL attributes
+    // 3. Closest parent container (if element is a comment inside a post card)
+    const parent = element.closest ? element.closest('shreddit-post, [data-subreddit], article') : null;
+    if (parent && parent !== element) {
+      for (let i = 0; i < attrNames.length; i++) {
+        const attr = attrNames[i];
+        if (parent.hasAttribute && parent.hasAttribute(attr)) {
+          const val = parent.getAttribute(attr);
+          if (val) {
+            const clean = cleanFn(val);
+            if (clean && !['all', 'popular', 'mod', 'friends'].includes(clean)) {
+              return clean;
+            }
+          }
+        }
+      }
+    }
+
+    // 4. Permalink / URL attributes
     const urlAttrs = ['permalink', 'data-permalink', 'post-url', 'content-href', 'href'];
-    for (const attr of urlAttrs) {
+    for (let i = 0; i < urlAttrs.length; i++) {
+      const attr = urlAttrs[i];
       if (element.hasAttribute && element.hasAttribute(attr)) {
         const val = element.getAttribute(attr);
         if (val) {
@@ -312,14 +427,13 @@
       }
     }
 
-    // 3. Child links inside element
+    // 5. Child subreddit badge links (avoiding random links in comment body)
     if (element.querySelector) {
-      const targetLinks = element.querySelectorAll(
-        'a[slot="subreddit-name"], a[data-testid="subreddit-name"], a.subreddit-name, a[data-click-id="subreddit"], a[href*="/r/"]'
+      const targetLink = element.querySelector(
+        'a[slot="subreddit-name"], a[data-testid="subreddit-name"], a.subreddit-name, a[data-click-id="subreddit"]'
       );
-
-      for (const a of targetLinks) {
-        const href = a.getAttribute('href') || a.href || '';
+      if (targetLink) {
+        const href = targetLink.getAttribute('href') || targetLink.href || '';
         const match = href.match(/\/r\/([a-zA-Z0-9_]+)/i);
         if (match) {
           const clean = match[1].toLowerCase();
@@ -328,19 +442,6 @@
           }
         }
       }
-    }
-
-    // 4. Closest parent container
-    const parent = element.closest ? element.closest('shreddit-post, [data-subreddit], article') : null;
-    if (parent && parent !== element) {
-      const parentSub = extractSubreddit(parent);
-      if (parentSub) return parentSub;
-    }
-
-    // 5. If currently on a subreddit page
-    const pageSub = getCurrentPageSubreddit();
-    if (pageSub) {
-      return pageSub;
     }
 
     return null;
@@ -371,32 +472,77 @@
   }
 
   /**
-   * Scans a specific element and its subtree for posts/comments
+   * Collects unique items, avoiding duplicate outer-inner wrappers
    */
-  async function scanElement(container) {
-    if (!isExtensionActive() || !container) return;
-
+  function collectElements(container) {
     const items = [];
 
     if (container.querySelectorAll) {
-      items.push(...Array.from(container.querySelectorAll(selectors.posts)));
-      items.push(...Array.from(container.querySelectorAll(selectors.comments)));
+      const posts = container.querySelectorAll(selectors.posts);
+      for (let i = 0; i < posts.length; i++) {
+        const el = posts[i];
+        if (el.tagName && el.tagName.toLowerCase() === 'article' && el.querySelector('shreddit-post, [data-testid="post-container"]')) {
+          continue;
+        }
+        items.push(el);
+      }
+      const comments = container.querySelectorAll(selectors.comments);
+      for (let i = 0; i < comments.length; i++) {
+        const el = comments[i];
+        if (el.getAttribute && el.getAttribute('data-testid') === 'comment' && el.closest('shreddit-comment') && el.tagName.toLowerCase() !== 'shreddit-comment') {
+          continue;
+        }
+        items.push(el);
+      }
     }
 
-    if (container.matches && (container.matches(selectors.posts) || container.matches(selectors.comments))) {
-      items.push(container);
+    if (container.matches) {
+      if (container.matches(selectors.posts)) {
+        if (!(container.tagName && container.tagName.toLowerCase() === 'article' && container.querySelector('shreddit-post, [data-testid="post-container"]'))) {
+          items.push(container);
+        }
+      } else if (container.matches(selectors.comments)) {
+        items.push(container);
+      }
     }
 
     if (container.shadowRoot && container.shadowRoot.querySelectorAll) {
-      items.push(...Array.from(container.shadowRoot.querySelectorAll(selectors.posts)));
-      items.push(...Array.from(container.shadowRoot.querySelectorAll(selectors.comments)));
+      const shadowPosts = container.shadowRoot.querySelectorAll(selectors.posts);
+      for (let i = 0; i < shadowPosts.length; i++) {
+        const el = shadowPosts[i];
+        if (el.tagName && el.tagName.toLowerCase() === 'article' && el.querySelector('shreddit-post, [data-testid="post-container"]')) {
+          continue;
+        }
+        items.push(el);
+      }
+      const shadowComments = container.shadowRoot.querySelectorAll(selectors.comments);
+      for (let i = 0; i < shadowComments.length; i++) {
+        items.push(shadowComments[i]);
+      }
     }
 
-    for (const item of items) {
-      // Skip if already hidden
+    return items;
+  }
+
+  /**
+   * Scans a specific element and its subtree synchronously
+   */
+  function scanElement(container) {
+    if (!isExtensionActive() || !container) return;
+
+    const items = collectElements(container);
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      // Skip immediately if already processed or already hidden
+      if (item.hasAttribute('data-unishield-processed')) {
+        continue;
+      }
       if (item.classList.contains('unishield-hidden') ||
           item.classList.contains('unishield-sub-hidden') ||
           item.classList.contains('unishield-promoted-hidden')) {
+        item.setAttribute('data-unishield-processed', 'true');
         continue;
       }
 
@@ -424,31 +570,27 @@
         }
       }
 
-      // 2. Subreddit blocklist filter (checks both posts and comments)
+      // 2. Subreddit blocklist filter (checks both posts and comments, synchronous lookup)
       const subredditName = extractSubreddit(item);
-      const storage = getStorage();
-      if (subredditName && storage) {
-        const isSubBlocked = await storage.isSubredditBlocklisted(subredditName);
-        if (isSubBlocked) {
-          item.classList.add('unishield-sub-hidden');
-          const parentArticle = item.closest ? item.closest('article') : null;
-          if (parentArticle && parentArticle !== item) {
-            parentArticle.classList.add('unishield-sub-hidden');
-          }
-          item.setAttribute('data-unishield-processed', 'true');
-          pageStats.blocked++;
-          if (storage) {
-            storage.incrementHidden('reddit').catch(() => {});
-          }
-          continue;
+      if (subredditName && blockedSubredditsSet.has(subredditName)) {
+        item.classList.add('unishield-sub-hidden');
+        const parentArticle = item.closest ? item.closest('article') : null;
+        if (parentArticle && parentArticle !== item) {
+          parentArticle.classList.add('unishield-sub-hidden');
         }
+        item.setAttribute('data-unishield-processed', 'true');
+        pageStats.blocked++;
+        const storage = getStorage();
+        if (storage) {
+          storage.incrementHidden('reddit').catch(() => {});
+        }
+        continue;
       }
 
       // 3. User extraction
       let username = null;
       const tagName = item.tagName ? item.tagName.toLowerCase() : '';
 
-      // Direct attributes on custom element
       if (tagName === 'shreddit-post' || tagName === 'shreddit-comment') {
         username = item.getAttribute('author');
       }
@@ -460,7 +602,8 @@
       // Check author links in light DOM
       if (!username && item.querySelectorAll) {
         const links = item.querySelectorAll(selectors.authorLinks);
-        for (const link of links) {
+        for (let j = 0; j < links.length; j++) {
+          const link = links[j];
           const parentComponent = link.closest ? link.closest('shreddit-post, shreddit-comment') : null;
           if (parentComponent && parentComponent !== item) continue;
 
@@ -485,7 +628,8 @@
       // Check author links in shadowRoot if present
       if (!username && item.shadowRoot && item.shadowRoot.querySelectorAll) {
         const shadowLinks = item.shadowRoot.querySelectorAll(selectors.authorLinks);
-        for (const link of shadowLinks) {
+        for (let j = 0; j < shadowLinks.length; j++) {
+          const link = shadowLinks[j];
           const detector = getDetector();
           if (detector && detector.extractUsernameFromHref) {
             const extracted = detector.extractUsernameFromHref(link.getAttribute('href') || link.href);
@@ -497,11 +641,24 @@
         }
       }
 
-      // 4. Content and Text Filters: Editorialized titles, Muted keywords, Racism, and Gender-War
+      // Check allowlist early if username is present
+      const cleanUsername = username ? username.toLowerCase().trim() : null;
+      if (cleanUsername && allowedRedditUsersSet.has(cleanUsername)) {
+        item.setAttribute('data-unishield-processed', 'true');
+        continue;
+      }
+
+      // Check user blocklist early
+      if (cleanUsername && blockedRedditUsersSet.has(cleanUsername)) {
+        applyAction(item, username);
+        continue;
+      }
+
+      // 4. Content and Text Filters
       const text = extractTextContent(item);
       const postTitle = isPost ? (extractPostTitle(item) || text) : '';
 
-      // 4a. Editorialized titles filter (Call centers / political troll farm pattern: 2 to 4 sentences)
+      // 4a. Editorialized titles filter
       if (isPost && config.reddit.removeEditorializedTitles !== false && postTitle) {
         if (isEditorializedTitle(postTitle)) {
           applyAction(item, username || 'editorialized-title');
@@ -509,34 +666,26 @@
         }
       }
 
-      // 4b. Custom muted keywords filter (post titles and comment body, tolerant to case and special characters)
-      const mutedKeywords = (config.reddit && config.reddit.mutedKeywords) || [];
-      if (mutedKeywords.length > 0) {
-        if (isPost && postTitle) {
-          const hasMutedInTitle = mutedKeywords.some(kw => matchesKeyword(postTitle, kw));
-          if (hasMutedInTitle) {
-            applyAction(item, username || 'muted-keyword-title');
-            continue;
-          }
-        } else if (!isPost && text) {
-          // Comment
-          const hasMutedInComment = mutedKeywords.some(kw => matchesKeyword(text, kw));
-          if (hasMutedInComment) {
-            applyAction(item, username || 'muted-keyword-comment');
-            continue;
-          }
+      // 4b. Custom muted keywords filter
+      if (compiledMutedKeywords.length > 0) {
+        if (isPost && postTitle && matchesAnyMutedKeyword(postTitle)) {
+          applyAction(item, username || 'muted-keyword-title');
+          continue;
+        } else if (!isPost && text && matchesAnyMutedKeyword(text)) {
+          applyAction(item, username || 'muted-keyword-comment');
+          continue;
         }
       }
 
-      // 4c. Racism and Gender-War toxicity text filters
+      // 4c. Toxicity text filters (single check for racism/hate speech + religious discrimination)
       if (text) {
         const defaults = getDefaults();
         const patterns = (defaults && defaults.patterns) || {};
 
         if (config.reddit.removeRacism !== false && patterns.racism) {
-          const isRacist = patterns.racism.some(regex => regex.test(text));
-          if (isRacist) {
-            applyAction(item, username || 'racism-filter');
+          const isHateSpeech = patterns.racism.some(regex => regex.test(text));
+          if (isHateSpeech) {
+            applyAction(item, username || 'hate-speech-filter');
             continue;
           }
         }
@@ -550,38 +699,19 @@
         }
       }
 
-      if (item.hasAttribute('data-unishield-processed')) continue;
-
+      // 5. Bot username detection
       if (username) {
-        let isAllowlisted = false;
-        let isBlocklisted = false;
-        let isSuspicious = false;
-
-        const curStorage = getStorage();
-        if (curStorage) {
-          isAllowlisted = await curStorage.isRedditUserAllowlisted(username);
-          isBlocklisted = await curStorage.isRedditUserBlocklisted(username);
-        }
-
-        // If whitelisted, NEVER block
-        if (isAllowlisted) {
-          item.setAttribute('data-unishield-processed', 'true');
-          continue;
-        }
-
         const detector = getDetector();
-        if (isBlocklisted) {
-          isSuspicious = true;
-        } else if (config.reddit.detectBotPatterns !== false && detector && detector.isSuspiciousUsername) {
-          isSuspicious = detector.isSuspiciousUsername(username);
-        }
-
-        if (isSuspicious) {
-          applyAction(item, username);
-        } else {
-          item.setAttribute('data-unishield-processed', 'true');
+        if (config.reddit.detectBotPatterns !== false && detector && detector.isSuspiciousUsername) {
+          if (detector.isSuspiciousUsername(username)) {
+            applyAction(item, username);
+            continue;
+          }
         }
       }
+
+      // Item passed all checks: mark as processed to prevent redundant scans
+      item.setAttribute('data-unishield-processed', 'true');
     }
   }
 
@@ -601,13 +731,10 @@
 
     checkPageSubreddit();
 
-    // Reddit SPA streams content after route changes.
-    // Staggered scans ensure late-hydrating comments and elements are fully covered.
+    // Reddit SPA streams content after route changes
     runFullScan();
-    setTimeout(runFullScan, 200);
-    setTimeout(runFullScan, 600);
-    setTimeout(runFullScan, 1200);
-    setTimeout(runFullScan, 2500);
+    setTimeout(runFullScan, 400);
+    setTimeout(runFullScan, 1500);
   }
 
   /**
@@ -635,8 +762,7 @@
   }
 
   /**
-   * Handles debounced scanning for mutations.
-   * Auto-disconnects if extension context is invalidated.
+   * Handles debounced scanning for mutations without dropping mutations across frames.
    */
   function handleMutations(mutations) {
     const storage = getStorage();
@@ -645,36 +771,42 @@
       return;
     }
 
-    // Fallback detection for client-side SPA navigation if history methods were bypassed
     if (window.location.href !== lastUrl) {
       handleUrlChange();
     }
 
-    if (scanPending || !isExtensionActive()) return;
+    if (!isExtensionActive()) return;
+
+    for (let i = 0; i < mutations.length; i++) {
+      const mutation = mutations[i];
+      if (mutation.type === 'childList') {
+        const added = mutation.addedNodes;
+        for (let j = 0; j < added.length; j++) {
+          const node = added[j];
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            pendingTargets.add(node);
+          }
+        }
+      } else if (mutation.type === 'attributes') {
+        if (mutation.target && mutation.target.nodeType === Node.ELEMENT_NODE) {
+          mutation.target.removeAttribute('data-unishield-processed');
+          pendingTargets.add(mutation.target);
+        }
+      }
+    }
+
+    if (scanPending) return;
 
     scanPending = true;
     requestAnimationFrame(() => {
       scanPending = false;
-      const targets = new Set();
+      const targetsToProcess = pendingTargets;
+      pendingTargets = new Set();
 
-      for (const mutation of mutations) {
-        if (mutation.type === 'childList') {
-          for (const node of mutation.addedNodes) {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              targets.add(node);
-            }
-          }
-        } else if (mutation.type === 'attributes') {
-          if (mutation.target && mutation.target.nodeType === Node.ELEMENT_NODE) {
-            // Re-evaluate element if author attribute was added or changed by hydration
-            mutation.target.removeAttribute('data-unishield-processed');
-            targets.add(mutation.target);
-          }
+      for (const target of targetsToProcess) {
+        if (target.isConnected) {
+          scanElement(target);
         }
-      }
-
-      for (const target of targets) {
-        scanElement(target);
       }
     });
   }
@@ -717,8 +849,10 @@
           if (curStorage) {
             curStorage.getConfig().then(newConfig => {
               config = newConfig;
+              updateLookupCaches();
               clearAllModifications();
               if (isExtensionActive()) {
+                checkPageSubreddit();
                 runFullScan();
                 startObserver();
               } else {

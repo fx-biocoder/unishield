@@ -16,6 +16,8 @@
     let observer = null;
     let pageStats = { blocked: 0 };
     let scanPending = false;
+    let mutedCompaniesSet = new Set();
+    let mutedKeywordsList = [];
 
     // Multilingual interaction action words
     const interactions = {
@@ -52,6 +54,14 @@
         postBody: 'span[data-testid="expandable-text-box"], div.feed-shared-update-v2__description-wrapper, div.update-components-text'
     };
 
+    function updateCaches() {
+        const comps = (config && config.linkedin && config.linkedin.mutedCompanies) || [];
+        mutedCompaniesSet = new Set(comps.map(c => (c || '').trim().toLowerCase()).filter(Boolean));
+
+        const words = (config && config.linkedin && config.linkedin.mutedWords) || [];
+        mutedKeywordsList = words.map(k => (k || '').trim().toLowerCase()).filter(Boolean);
+    }
+
     /**
      * Initializes the content script for LinkedIn Feed
      */
@@ -60,6 +70,7 @@
         if (storage) {
             config = await storage.getConfig();
         }
+        updateCaches();
 
         if (isExtensionActive()) {
             runFilters();
@@ -105,8 +116,8 @@
     function checkPromoted(post) {
         if (config.linkedin.removePromotedPosts === false) return false;
         const spans = post.querySelectorAll('p > span, span.feed-shared-actor__sub-description');
-        for (const span of spans) {
-            const text = normalizeText(span.textContent);
+        for (let i = 0; i < spans.length; i++) {
+            const text = normalizeText(spans[i].textContent);
             if (!text || text.length > 150) continue;
             for (const word of promotedWords) {
                 if (text === word || text.startsWith(word + ' ')) {
@@ -120,28 +131,25 @@
     /**
      * Check: Custom muted keywords
      */
-    function checkKeywords(post) {
-        const muted = config.linkedin.mutedWords || [];
-        if (!Array.isArray(muted) || muted.length === 0) return false;
-        const postWords = post.querySelector(SELECTORS.postBody);
-        if (!postWords) return false;
-        const text = (postWords.textContent || '').toLowerCase();
-        return muted.some(k => {
-            const clean = (k || '').trim().toLowerCase();
-            return clean && text.includes(clean);
-        });
+    function checkKeywords(lowerText) {
+        if (!lowerText || mutedKeywordsList.length === 0) return false;
+        for (let i = 0; i < mutedKeywordsList.length; i++) {
+            if (lowerText.includes(mutedKeywordsList[i])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Check: Muted companies
+     * Check: Muted companies (O(1) Set lookups)
      */
     function checkCompanies(post) {
-        const companies = config.linkedin.mutedCompanies || [];
-        if (!Array.isArray(companies) || companies.length === 0) return false;
+        if (mutedCompaniesSet.size === 0) return false;
         const spans = post.querySelectorAll('p > span, .feed-shared-actor__name, .update-components-actor__name');
-        for (const span of spans) {
-            const text = normalizeText(span.textContent).toLowerCase();
-            if (companies.some(c => (c || '').trim().toLowerCase() === text)) {
+        for (let i = 0; i < spans.length; i++) {
+            const text = normalizeText(spans[i].textContent).toLowerCase();
+            if (mutedCompaniesSet.has(text)) {
                 return true;
             }
         }
@@ -156,12 +164,12 @@
         const spans = post.querySelectorAll('p > span, span.feed-shared-header__text-view, .update-components-header');
         const lang = (document.documentElement.lang || 'en').substring(0, 2);
         const langInteractions = interactions[lang] || interactions['en'];
-        for (const span of spans) {
-            const text = normalizeText(span.textContent);
+        for (let i = 0; i < spans.length; i++) {
+            const text = normalizeText(spans[i].textContent);
             if (!text || text.length > 150) continue;
             const words = text.toLowerCase().split(' ');
-            for (const word of words) {
-                if (langInteractions.has(word)) {
+            for (let j = 0; j < words.length; j++) {
+                if (langInteractions.has(words[j])) {
                     return true;
                 }
             }
@@ -172,15 +180,10 @@
     /**
      * Check: AI-generated posts
      */
-    function checkAI(post) {
-        if (config.linkedin.removeAIPosts === false) return false;
-        const postWords = post.querySelector(SELECTORS.postBody);
-        if (!postWords) return false;
-        const text = postWords.textContent || '';
-
+    function checkAI(text) {
+        if (!text || config.linkedin.removeAIPosts === false) return false;
         const defaults = getDefaults();
         const aiPatterns = (defaults && defaults.linkedinPatterns && defaults.linkedinPatterns.ai) || [];
-
         return aiPatterns.some(regex => regex.test(text));
     }
 
@@ -190,8 +193,8 @@
     function checkSuggested(post) {
         if (config.linkedin.removeSuggestedPosts === false) return false;
         const spans = post.querySelectorAll('p > span, .feed-shared-header__text-view');
-        for (const span of spans) {
-            const text = normalizeText(span.textContent);
+        for (let i = 0; i < spans.length; i++) {
+            const text = normalizeText(spans[i].textContent);
             if (!text || text.length > 150) continue;
             if (suggestedWords.has(text)) {
                 return true;
@@ -203,28 +206,24 @@
     /**
      * Check: Posts with emojis
      */
-    function checkEmojis(post) {
-        if (config.linkedin.removePostsWithEmojis !== true) return false;
-        const postWords = post.querySelector(SELECTORS.postBody);
-        if (!postWords) return false;
-        return regexEmoji.test(postWords.textContent || '');
+    function checkEmojis(text) {
+        if (!text || config.linkedin.removePostsWithEmojis !== true) return false;
+        return regexEmoji.test(text);
     }
 
     /**
      * Check: "Broetry" & engagement bait (questions + excessive line breaks)
      */
-    function checkBroetry(post) {
+    function checkBroetry(postWords, text) {
         if (config.linkedin.removeBroetryPosts === false) return false;
-        const postWords = post.querySelector(SELECTORS.postBody);
-        if (!postWords) return false;
-        const text = postWords.textContent || '';
         if (regexBroetryWords.test(text)) {
             return true;
         }
-        const html = postWords.innerHTML || '';
-        const brCount = (html.match(/<br\s*\/?>/gi) || []).length;
-        if (brCount > 6) {
-            return true;
+        if (postWords) {
+            const brCount = postWords.querySelectorAll('br').length;
+            if (brCount > 6) {
+                return true;
+            }
         }
         return false;
     }
@@ -248,23 +247,29 @@
             hidePost(post, 'interaction');
             return;
         }
-        if (checkKeywords(post)) {
-            hidePost(post, 'muted-word');
-            return;
-        }
         if (checkCompanies(post)) {
             hidePost(post, 'muted-company');
             return;
         }
-        if (checkAI(post)) {
+
+        // Text-based checks: query body once
+        const postWords = post.querySelector(SELECTORS.postBody);
+        const text = postWords ? (postWords.textContent || '') : '';
+        const lowerText = text.toLowerCase();
+
+        if (checkKeywords(lowerText)) {
+            hidePost(post, 'muted-word');
+            return;
+        }
+        if (checkAI(text)) {
             hidePost(post, 'ai-post');
             return;
         }
-        if (checkBroetry(post)) {
+        if (checkBroetry(postWords, text)) {
             hidePost(post, 'broetry');
             return;
         }
-        if (checkEmojis(post)) {
+        if (checkEmojis(text)) {
             hidePost(post, 'emoji');
             return;
         }
@@ -273,12 +278,14 @@
     }
 
     /**
-     * Scans and filters all posts in the feed
+     * Scans and filters only unprocessed posts in the feed
      */
     function runFilters() {
         if (!isExtensionActive()) return;
-        const posts = document.querySelectorAll(SELECTORS.postContainers);
-        posts.forEach(evaluatePost);
+        const posts = document.querySelectorAll(SELECTORS.postContainers + ':not([data-bs-processed])');
+        for (let i = 0; i < posts.length; i++) {
+            evaluatePost(posts[i]);
+        }
     }
 
     /**
@@ -321,7 +328,7 @@
     }
 
     /**
-     * Sets up message listener
+     * Handles message events safely
      */
     function setupMessageListener() {
         try {
@@ -334,6 +341,7 @@
                     if (curStorage) {
                         curStorage.getConfig().then(newConfig => {
                             config = newConfig;
+                            updateCaches();
                             clearAllModifications();
                             if (isExtensionActive()) {
                                 runFilters();

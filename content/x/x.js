@@ -30,6 +30,7 @@
     };
 
     const regexBroetryWords = /agree\?|thoughts\?|¿estás de acuerdo\?|¿qué opinas\?|¿coincidís\?|concorda\?|opinioni\?|d'accordo\?|a thread\b|abro hilo\b|un hilo\b|🧵|here['’]s what happened:|here['’]s why:|aquí te cuento:|te cuento:|deja de hacer esto|stop doing this/i;
+    const adBadges = new Set(['ad', 'promoted', 'patrocinado', 'publicidad', 'sponsorisé', 'gesponsert', 'publicité']);
 
     function isBroetryTweet(text, textElement) {
         if (regexBroetryWords.test(text)) {
@@ -40,7 +41,7 @@
             return true;
         }
         if (textElement) {
-            const brCount = (textElement.innerHTML.match(/<br\s*\/?>/gi) || []).length;
+            const brCount = textElement.querySelectorAll('br').length;
             if (brCount >= 5) {
                 return true;
             }
@@ -92,17 +93,18 @@
     }
 
     /**
-     * Checks if a tweet is an advertisement/promoted
+     * Checks if a tweet is an advertisement/promoted efficiently
      */
     function isPromotedTweet(tweet) {
         // 1. Placement tracking attribute
         if (tweet.querySelector('[data-testid="placementTracking"]')) return true;
 
-        // 2. Text badges indicating ads
-        const allSpans = tweet.querySelectorAll('span');
-        for (const span of allSpans) {
-            const text = (span.textContent || '').trim().toLowerCase();
-            if (text === 'ad' || text === 'promoted' || text === 'patrocinado' || text === 'publicidad' || text === 'sponsorisé') {
+        // 2. Direct ad spans in header/user area or badge
+        const header = tweet.querySelector(SELECTORS.userNameContainer) || tweet;
+        const spans = header.querySelectorAll('span');
+        for (let i = 0; i < spans.length; i++) {
+            const text = (spans[i].textContent || '').trim().toLowerCase();
+            if (adBadges.has(text)) {
                 return true;
             }
         }
@@ -111,33 +113,29 @@
     }
 
     /**
-     * Determines badge color or type (blue, gold, grey) using structural selectors and color fallbacks
+     * Determines badge color or type (blue, gold, grey) using structural selectors
+     * without forcing synchronous reflow (no getComputedStyle).
      */
     function getVerificationType(tweet) {
-        // 1. Try structural selectors from Detox
-        try {
-            if (tweet.querySelector(SELECTORS.goldCheckmark)) return 'gold';
-            if (tweet.querySelector(SELECTORS.greyCheckmark)) return 'grey';
-            if (tweet.querySelector(SELECTORS.blueCheckmark)) return 'blue';
-        } catch (e) {
-            // Fallback if :has is unsupported in older browser environments
-        }
-
         const icon = tweet.querySelector(SELECTORS.verifiedIcon);
         if (!icon) return null;
 
-        // 2. Direct DOM structure inspection
+        // Fast structure checks directly on icon
         if (icon.querySelector('linearGradient')) return 'gold';
         const path = icon.querySelector('path');
         if (path && path.hasAttribute('fill-rule')) return 'grey';
 
-        // 3. Examine fill or style color
-        const fill = icon.getAttribute('fill') || (path && path.getAttribute('fill')) || window.getComputedStyle(icon).color;
+        try {
+            if (icon.matches(SELECTORS.goldCheckmark)) return 'gold';
+            if (icon.matches(SELECTORS.greyCheckmark)) return 'grey';
+            if (icon.matches(SELECTORS.blueCheckmark)) return 'blue';
+        } catch (e) {}
 
-        if (fill.includes('234, 179, 8') || fill.includes('rgb(234, 179, 8)') || fill.toLowerCase().includes('#eab308') || fill.toLowerCase().includes('#ffd700')) {
+        const fill = icon.getAttribute('fill') || (path && path.getAttribute('fill')) || '';
+        if (fill.includes('234, 179, 8') || fill.toLowerCase().includes('#eab308') || fill.toLowerCase().includes('#ffd700')) {
             return 'gold';
         }
-        if (fill.includes('130, 154, 171') || fill.includes('rgb(130, 154, 171)') || fill.toLowerCase().includes('#829aab')) {
+        if (fill.includes('130, 154, 171') || fill.toLowerCase().includes('#829aab')) {
             return 'grey';
         }
 
@@ -206,44 +204,34 @@
     }
 
     /**
-     * Evaluates a single tweet against configured rules
+     * Evaluates a single tweet against configured rules.
+     * Reordered from cheapest to most expensive filters to maximize early exits.
      */
     function evaluateTweet(tweet) {
         if (!isExtensionActive()) return;
         if (tweet.hasAttribute('data-bs-processed')) return;
 
-        // 1. Promoted / Ads filter
+        // 1. Promoted / Ads filter (very cheap)
         if (config.x.removePromoted !== false && isPromotedTweet(tweet)) {
             hideTweet(tweet, 'promoted');
             return;
         }
 
-        // 2. Checkmark filters (Blue, Grey, Gold)
-        const badgeType = getVerificationType(tweet);
-        if (badgeType) {
-            if (badgeType === 'blue' && config.x.removeBlueCheckmark === true) {
-                hideTweet(tweet, 'blue-checkmark');
-                return;
-            }
-            if (badgeType === 'grey' && config.x.removeGreyCheckmark === true) {
-                hideTweet(tweet, 'grey-checkmark');
-                return;
-            }
-            if (badgeType === 'gold' && config.x.removeGoldCheckmark === true) {
-                hideTweet(tweet, 'gold-checkmark');
-                return;
-            }
-        }
-
-        // 3. Statistical Ragebait filter (Engagement ratio analysis via Bayesian smoothed ratio & z-score)
-        const checkRagebait = config.x.removeRagebait === true || config.x.removePoliticalRagebait === true;
-        if (checkRagebait) {
-            const { likes, comments } = getTweetInteractions(tweet);
-            const detector = window.UniShield && window.UniShield.Detector;
-            if (detector && detector.detectRagebait) {
-                const rageResult = detector.detectRagebait(likes, comments);
-                if (rageResult && rageResult.signal) {
-                    hideTweet(tweet, 'ragebait-ratio');
+        // 2. Checkmark filters (Blue, Grey, Gold) - only run if at least one checkmark filter is enabled
+        const checkCheckmarks = config.x.removeBlueCheckmark === true || config.x.removeGreyCheckmark === true || config.x.removeGoldCheckmark === true;
+        if (checkCheckmarks) {
+            const badgeType = getVerificationType(tweet);
+            if (badgeType) {
+                if (badgeType === 'blue' && config.x.removeBlueCheckmark === true) {
+                    hideTweet(tweet, 'blue-checkmark');
+                    return;
+                }
+                if (badgeType === 'grey' && config.x.removeGreyCheckmark === true) {
+                    hideTweet(tweet, 'grey-checkmark');
+                    return;
+                }
+                if (badgeType === 'gold' && config.x.removeGoldCheckmark === true) {
+                    hideTweet(tweet, 'gold-checkmark');
                     return;
                 }
             }
@@ -253,29 +241,27 @@
         const textElement = tweet.querySelector(SELECTORS.tweetText);
         if (textElement) {
             const text = textElement.textContent || '';
+            const lowerText = text.toLowerCase();
             const defaults = getDefaults();
             const patterns = (defaults && defaults.xPatterns) || {};
-            const scoringLists = defaults && defaults.politicalScoring;
 
-            // 4. Political Content filter (0 = No ocultar nada, 1 = Ocultar tweets altamente polarizantes, 2 = Ocultar todo el contenido político)
-            const strictness = typeof config.x.politicalStrictness === 'number'
-                ? config.x.politicalStrictness
-                : (config.x.removeOverlyPolitical === true || config.x.removePoliticalRagebait === true ? 1 : 0);
+            // 3. Custom Muted Keywords filter (fastest string includes check)
+            if (Array.isArray(config.x.mutedKeywords) && config.x.mutedKeywords.length > 0) {
+                const hasMutedWord = config.x.mutedKeywords.some(keyword => {
+                    const cleanKeyword = (keyword || '').trim().toLowerCase();
+                    return cleanKeyword && lowerText.includes(cleanKeyword);
+                });
 
-            if (strictness === 2) {
-                // Strict / All political content: Fast presence check without score calculation
-                const detector = window.UniShield && window.UniShield.Detector;
-                if (detector && detector.hasPoliticalContent && detector.hasPoliticalContent(text, scoringLists)) {
-                    hideTweet(tweet, 'political-content');
+                if (hasMutedWord) {
+                    hideTweet(tweet, 'custom-keyword');
                     return;
                 }
-            } else if (strictness === 1) {
-                // Moderate / Highly polarizing: Weighted scoring calculation
-                const detector = window.UniShield && window.UniShield.Detector;
-                if (detector && detector.isOverlyPoliticalTweet && detector.isOverlyPoliticalTweet(text, 6, scoringLists)) {
-                    hideTweet(tweet, 'overly-political');
-                    return;
-                }
+            }
+
+            // 4. Broetry & Engagement Bait filter
+            if (config.x.removeBroetryPosts !== false && isBroetryTweet(text, textElement)) {
+                hideTweet(tweet, 'broetry');
+                return;
             }
 
             // 5. AI Tweets filter
@@ -296,31 +282,16 @@
                 }
             }
 
-            // 7. Broetry & Engagement Bait filter
-            if (config.x.removeBroetryPosts !== false && isBroetryTweet(text, textElement)) {
-                hideTweet(tweet, 'broetry');
-                return;
-            }
-
-            // 7. Keyword Ragebait filter (fallback)
-            if (config.x.removePoliticalRagebait === true && patterns.ragebait) {
-                const isRage = patterns.ragebait.some(regex => regex.test(text));
-                if (isRage) {
-                    hideTweet(tweet, 'political-ragebait');
-                    return;
-                }
-            }
-
-            // 6. Racism filter
+            // 7. Racism and religious discrimination hate speech filter (single evaluation via patterns.racism)
             if (config.x.removeRacism !== false && patterns.racism) {
-                const isRacist = patterns.racism.some(regex => regex.test(text));
-                if (isRacist) {
-                    hideTweet(tweet, 'racism');
+                const isHateSpeech = patterns.racism.some(regex => regex.test(text));
+                if (isHateSpeech) {
+                    hideTweet(tweet, 'hate-speech');
                     return;
                 }
             }
 
-            // 7. Gender-War toxicity filter
+            // 8. Gender-War toxicity filter
             if (config.x.removeGenderWar !== false && patterns.genderWar) {
                 const isGenderWar = patterns.genderWar.some(regex => regex.test(text));
                 if (isGenderWar) {
@@ -329,16 +300,48 @@
                 }
             }
 
-            // 8. Custom Muted Keywords filter
-            if (Array.isArray(config.x.mutedKeywords) && config.x.mutedKeywords.length > 0) {
-                const lowerText = text.toLowerCase();
-                const hasMutedWord = config.x.mutedKeywords.some(keyword => {
-                    const cleanKeyword = keyword.trim().toLowerCase();
-                    return cleanKeyword && lowerText.includes(cleanKeyword);
-                });
+            // 9. Political Content filter (strictness check)
+            const strictness = typeof config.x.politicalStrictness === 'number'
+                ? config.x.politicalStrictness
+                : (config.x.removeOverlyPolitical === true || config.x.removePoliticalRagebait === true ? 1 : 0);
 
-                if (hasMutedWord) {
-                    hideTweet(tweet, 'custom-keyword');
+            if (strictness > 0) {
+                const scoringLists = defaults && defaults.politicalScoring;
+                const detector = window.UniShield && window.UniShield.Detector;
+
+                if (strictness === 2) {
+                    if (detector && detector.hasPoliticalContent && detector.hasPoliticalContent(text, scoringLists)) {
+                        hideTweet(tweet, 'political-content');
+                        return;
+                    }
+                } else if (strictness === 1) {
+                    if (detector && detector.isOverlyPoliticalTweet && detector.isOverlyPoliticalTweet(text, 6, scoringLists)) {
+                        hideTweet(tweet, 'overly-political');
+                        return;
+                    }
+                }
+            }
+
+            // 10. Keyword Ragebait filter (fallback)
+            if (config.x.removePoliticalRagebait === true && patterns.ragebait) {
+                const isRage = patterns.ragebait.some(regex => regex.test(text));
+                if (isRage) {
+                    hideTweet(tweet, 'political-ragebait');
+                    return;
+                }
+            }
+        }
+
+        // 11. Statistical Ragebait filter (Engagement ratio analysis via Bayesian smoothed ratio & z-score)
+        // Evaluated last, only if enabled and tweet passed all text filters
+        const checkRagebait = config.x.removeRagebait === true || config.x.removePoliticalRagebait === true;
+        if (checkRagebait) {
+            const { likes, comments } = getTweetInteractions(tweet);
+            const detector = window.UniShield && window.UniShield.Detector;
+            if (detector && detector.detectRagebait) {
+                const rageResult = detector.detectRagebait(likes, comments);
+                if (rageResult && rageResult.signal) {
+                    hideTweet(tweet, 'ragebait-ratio');
                     return;
                 }
             }
@@ -349,12 +352,14 @@
     }
 
     /**
-     * Runs scan over all visible tweets on the page
+     * Runs scan over only unprocessed visible tweets on the page
      */
     function runFullScan() {
         if (!isExtensionActive()) return;
-        const tweets = document.querySelectorAll(SELECTORS.tweets);
-        tweets.forEach(evaluateTweet);
+        const tweets = document.querySelectorAll(SELECTORS.tweets + ':not([data-bs-processed])');
+        for (let i = 0; i < tweets.length; i++) {
+            evaluateTweet(tweets[i]);
+        }
     }
 
     /**
