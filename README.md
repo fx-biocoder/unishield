@@ -6,8 +6,6 @@ A lightweight, privacy-first, open-source browser extension that restores sanity
 
 ---
 
-## Core Philosophy: Protecting Focus, Wellbeing, and Creative Life
-
 Social media platforms were once envisioned as tools for connection and discovery. Today, their algorithms are intentionally designed to maximize screen time by amplifying conflict, manufactured outrage, astroturfing campaigns, and relentless engagement bait. 
 
 This algorithmic toxicity has a profound and measurable cost on our lives:
