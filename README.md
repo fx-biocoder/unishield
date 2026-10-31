@@ -1,10 +1,10 @@
 # 🛡️ UniShield - Universal Feed Cleaner
 
+[![Publish to Chrome Web Store](https://github.com/fx-biocoder/unishield/actions/workflows/publish-cws.yml/badge.svg?event=workflow_dispatch)](https://github.com/fx-biocoder/unishield/actions/workflows/publish-cws.yml)
+
 A lightweight, privacy-first, open-source browser extension that restores sanity, focus, and clarity to your digital life by silently filtering out bots, polarizing outrage, engagement traps, paid checkmark noise, and deceptive spam across **Reddit**, **X (Twitter)**, and **LinkedIn**.
 
 ---
-
-## Core Philosophy: Protecting Focus, Wellbeing, and Creative Life
 
 Social media platforms were once envisioned as tools for connection and discovery. Today, their algorithms are intentionally designed to maximize screen time by amplifying conflict, manufactured outrage, astroturfing campaigns, and relentless engagement bait. 
 
