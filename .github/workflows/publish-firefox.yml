@@ -1,0 +1,68 @@
+name: Publish to Firefox Add-ons
+
+# Runs when a commit is pushed to main touching extension files.
+# Can also be triggered manually from the Actions tab.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'manifest.json'
+      - '*.js'
+      - '*.html'
+      - 'assets/**'
+      - 'background/**'
+      - 'content/**'
+      - 'lib/**'
+      - 'options/**'
+      - 'popup/**'
+      - 'styles/**'
+  workflow_dispatch:
+
+concurrency:
+  group: firefox-addon-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: firefox-addons
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run test suite
+        run: npm test
+
+      - name: Read version from manifest
+        id: manifest
+        run: echo "version=$(jq -r .version manifest.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Package extension for Firefox
+        run: |
+          bash ./build.sh
+          unzip -l "dist/unishield_firefox_v${{ steps.manifest.outputs.version }}.zip"
+
+      - name: Upload zip as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unishield-firefox-zip
+          path: dist/unishield_firefox_v*.zip
+
+      - name: Publish to Firefox Add-ons (AMO)
+        uses: wdzeng/firefox-addon@v1
+        with:
+          addon-guid: 'unishield@extension'
+          xpi-path: dist/unishield_firefox_v${{ steps.manifest.outputs.version }}.zip
+          jwt-issuer: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          jwt-secret: ${{ secrets.FIREFOX_JWT_SECRET }}
+          self-hosted: false
+
+      - name: Report publication summary
+        if: success()
+        run: |
+          echo "### 🦊 Submitted UniShield v${{ steps.manifest.outputs.version }} to Firefox Add-ons (AMO) for review" >> "$GITHUB_STEP_SUMMARY"
+          echo "Package: \`dist/unishield_firefox_v${{ steps.manifest.outputs.version }}.zip\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Addon GUID: \`unishield@extension\`" >> "$GITHUB_STEP_SUMMARY"
