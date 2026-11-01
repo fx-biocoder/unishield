@@ -58,7 +58,7 @@ Install UniShield directly from your browser's store for automatic updates:
 - **Chrome Web Store** (Google Chrome, Brave, Opera, Vivaldi, Microsoft Edge):  
   **[Install from Chrome Web Store](https://chromewebstore.google.com/detail/unishield-universal-feed/mmdlakegpcgplakmoopnnjhfpbclelcg)**
 
-- **Firefox Add-ons (AMO)**:  
+- **Firefox Add-ons** (coming soon):  
   **[Install from Firefox Add-ons](https://addons.mozilla.org/firefox/addon/unishield/)**
 
 ---
@@ -93,7 +93,7 @@ If you prefer building from source or running unpacked code locally:
    ```
 2. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`.
 3. Under *Temporary Extensions*, click **"Load Temporary Add-on..."**.
-4. Select `dist/unishield_firefox_v1.0.2.zip` (or the `manifest.json` inside the root folder).
+4. Select `dist/unishield_firefox_v{VERSION_NUMBER}.zip` (or the `manifest.json` inside the root folder).
 
 ---
 

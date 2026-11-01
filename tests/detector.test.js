@@ -124,4 +124,125 @@ describe('UniShield.Detector', () => {
       assert.strictEqual(Detector.hasPoliticalContent('Disfrutando de una pizza con amigos', scoring), false);
     });
   });
+
+  describe('Low-Effort Quote Tweet Detection', () => {
+    it('detects one-word affirmations and passive agreements', () => {
+      assert.strictEqual(Detector.isLowEffortQuote('This.'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('this'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Literally this 🙌'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Facts'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Fr fr'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Literal'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Tal cual'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Basado'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Factos.'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Amén 🙏'), true);
+    });
+
+    it('detects vague reaction exclamations', () => {
+      assert.strictEqual(Detector.isLowEffortQuote('Wild'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Insane'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Sin palabras'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('No lo puedo creer'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Qué locura'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('El chiste se cuenta solo'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Bro...'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Bruh'), true);
+    });
+
+    it('detects cliché viral quote templates', () => {
+      assert.strictEqual(Detector.isLowEffortQuote('Bro really said that with a straight face 💀'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Imagine believing this in 2026'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('He cooked here'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('Es cine 🚬'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('caught and exposed in 4k'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('caught her in 4k'), true);
+    });
+
+    it('detects emoji-only, punctuation-only, or empty reactions', () => {
+      assert.strictEqual(Detector.isLowEffortQuote('💀'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('💀💀💀'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('😭😭😭'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('👀'), true);
+      assert.strictEqual(Detector.isLowEffortQuote('???'), true);
+      assert.strictEqual(Detector.isLowEffortQuote(''), true);
+      assert.strictEqual(Detector.isLowEffortQuote('   '), true);
+    });
+
+    it('does not flag substantive, thoughtful quote commentary', () => {
+      assert.strictEqual(Detector.isLowEffortQuote('A great analysis of the new software architecture and microservices migration.'), false);
+      assert.strictEqual(Detector.isLowEffortQuote('No estoy de acuerdo con este hilo porque los datos del Banco Central muestran una caída del 4% en mayo.'), false);
+      assert.strictEqual(Detector.isLowEffortQuote('I recommend checking page 12 of the research paper for the actual methodology used.'), false);
+    });
+  });
+
+  describe('Broetry Detection (Excessive line breaks & single-sentence paragraphs)', () => {
+    it('detects posts with excessive line breaks', () => {
+      const excessiveBreaks = 'First point\nSecond point\nThird point\nFourth point\nFifth point\nSixth point';
+      assert.strictEqual(Detector.isBroetry(excessiveBreaks), true);
+      assert.strictEqual(Detector.isBroetry('Short text', 6), true);
+    });
+
+    it('detects single-sentence paragraph vertical structures (classic broetry)', () => {
+      const broetryText = 'Most founders fail in their first year.\n\nHere is why.\n\nThey do not talk to customers.\n\nThey build what nobody wants.';
+      assert.strictEqual(Detector.isBroetry(broetryText), true);
+    });
+
+    it('does not flag engagement bait hooks if there are no excessive line breaks', () => {
+      // Text hooks belong to engagement bait, NOT broetry
+      assert.strictEqual(Detector.isBroetry('True leadership is about serving others before yourself. Agree?'), false);
+      assert.strictEqual(Detector.isBroetry('El éxito no es suerte. ¿Qué opinas?'), false);
+    });
+
+    it('does not flag normal multiline paragraphs with multiple sentences', () => {
+      const normalArticle = 'This is a detailed analysis of renewable energy in South America. It examines wind, solar, and hydroelectric infrastructure across five countries. The data demonstrates significant year-over-year gains in total capacity.\n\nHowever, transmission bottlenecks remain a substantial challenge for grid operators. Further capital investments in high-voltage direct current lines will be required to stabilize distribution.';
+      assert.strictEqual(Detector.isBroetry(normalArticle), false);
+    });
+
+    it('does not flag viral slang, emojis, or single-line phrases as broetry', () => {
+      // Broetry is specifically excessive line breaks and single-sentence paragraphs, NOT slang or emojis
+      assert.strictEqual(Detector.isBroetry('Her parents are wild ngl 💀'), false);
+      assert.strictEqual(Detector.isBroetry('Bro was caught in 4k'), false);
+      assert.strictEqual(Detector.isBroetry('This is insane'), false);
+      assert.strictEqual(Detector.isBroetry('No way 💀💀💀'), false);
+    });
+  });
+
+  describe('Viral Engagement Bait Detection', () => {
+    it('detects conversational question hooks and thread starters', () => {
+      assert.strictEqual(Detector.isEngagementBait('True leadership is about serving others. Agree?'), true);
+      assert.strictEqual(Detector.isEngagementBait('El éxito no es suerte. ¿Qué opinas?'), true);
+      assert.strictEqual(Detector.isEngagementBait('Abro hilo sobre lo que pasó ayer 🧵'), true);
+      assert.strictEqual(Detector.isEngagementBait('Here is what happened: A breakdown'), true);
+      assert.strictEqual(Detector.isEngagementBait('Aquí te cuento la verdad'), true);
+    });
+
+    it('detects wild and insane viral hooks', () => {
+      assert.strictEqual(Detector.isEngagementBait('This situation is wild'), true);
+      assert.strictEqual(Detector.isEngagementBait('Her parents are wild ngl'), true);
+      assert.strictEqual(Detector.isEngagementBait('This is insane'), true);
+      assert.strictEqual(Detector.isEngagementBait('They are insane for doing that'), true);
+    });
+
+    it('detects tweets starting with Bro', () => {
+      assert.strictEqual(Detector.isEngagementBait('Bro really thought he could win'), true);
+      assert.strictEqual(Detector.isEngagementBait('"Bro is not serious"'), true);
+    });
+
+    it('detects caught in 4k variants', () => {
+      assert.strictEqual(Detector.isEngagementBait('He was caught in 4k during the stream'), true);
+      assert.strictEqual(Detector.isEngagementBait('caught and exposed in 4k'), true);
+      assert.strictEqual(Detector.isEngagementBait('caught her in 4k'), true);
+    });
+
+    it('detects skull emoji presence in text', () => {
+      assert.strictEqual(Detector.isEngagementBait('Literally me 💀'), true);
+      assert.strictEqual(Detector.isEngagementBait('I am dying ☠️'), true);
+    });
+
+    it('does not flag normal non-bait text', () => {
+      assert.strictEqual(Detector.isEngagementBait('A fascinating documentary about wildlife in Patagonia'), false);
+      assert.strictEqual(Detector.isEngagementBait('Meeting scheduled for 3pm in the conference room'), false);
+    });
+  });
 });

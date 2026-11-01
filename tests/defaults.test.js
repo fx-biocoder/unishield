@@ -147,10 +147,6 @@ describe('UniShield.Defaults and Pattern Registries', () => {
     const relPatterns = Defaults.patterns.religiousDiscrimination;
     const testMatch = (str) => relPatterns.some(p => p.test(str));
 
-    // Also verify they are included in racism / universal hate-speech
-    const hatePatterns = Defaults.patterns.racism;
-    const testHateMatch = (str) => hatePatterns.some(p => p.test(str));
-
     // Sky daddy / mocked deities targeting believers
     assert.strictEqual(testMatch('Praying to your invisible sky daddy won\'t save you'), true);
     assert.strictEqual(testMatch('These skydaddy worshipers are embarrassing'), true);
@@ -221,9 +217,7 @@ describe('UniShield.Defaults and Pattern Registries', () => {
     assert.strictEqual(testMatch('Todos los curas son pedófilos dijo en la televisión'), true);
     assert.strictEqual(testMatch('La iglesia pedófila encubriendo delitos'), true);
 
-    // Check integration in universal hate speech (racism list)
-    assert.strictEqual(testHateMatch('Praying to your invisible sky daddy won\'t save you'), true);
-    assert.strictEqual(testHateMatch('No le hagan caso a este creyentonto'), true);
+
 
     // False positives check
     assert.strictEqual(testMatch('The blue sky was clear this morning'), false);
@@ -242,5 +236,81 @@ describe('UniShield.Defaults and Pattern Registries', () => {
     assert.strictEqual(testMatch('Jewish culture, cuisine, and traditions in Latin America'), false);
     assert.strictEqual(testMatch('The museum exhibited artifacts from 109 different ancient cultures'), false);
     assert.strictEqual(testMatch('Rats and mice are common rodents found in urban areas'), false);
+  });
+
+  it('detects racism, racial slurs, and racial supremacy patterns', () => {
+    const racismPatterns = Defaults.patterns.racism;
+    assert.ok(Array.isArray(racismPatterns) && racismPatterns.length > 0);
+    const testMatch = (str) => racismPatterns.some(p => p.test(str));
+
+    // Anti-minority slurs
+    assert.strictEqual(testMatch('Some racist saying negros de mierda in the comments'), true);
+    assert.strictEqual(testMatch('Un grupo gritando monos de mierda en el estadio'), true);
+
+    // Anti-white slurs
+    assert.strictEqual(testMatch('Calling someone a mayo monkey online'), true);
+    assert.strictEqual(testMatch('Kill all white men was written on the poster'), true);
+    assert.strictEqual(testMatch('Los blancos son escoria'), true);
+
+    // Supremacy and ethnic cleansing
+    assert.strictEqual(testMatch('Promoting white supremacy ideology'), true);
+    assert.strictEqual(testMatch('Defending supremacía blanca en foros'), true);
+    assert.strictEqual(testMatch('Calls for race war across social networks'), true);
+    assert.strictEqual(testMatch('Promoting ethnic cleansing of the region'), true);
+    assert.strictEqual(testMatch('Telling immigrants go back to your country'), true);
+
+    // False positives check
+    assert.strictEqual(testMatch('The white cat sat on the black couch'), false);
+    assert.strictEqual(testMatch('We watched the Formula 1 race yesterday'), false);
+    assert.strictEqual(testMatch('A peaceful gathering of diverse communities'), false);
+  });
+
+  it('detects engagement bait patterns (question hooks, thread starters, viral slang, templates, skull spam)', () => {
+    const engagementBaitPatterns = Defaults.patterns.engagementBait;
+    assert.ok(Array.isArray(engagementBaitPatterns) && engagementBaitPatterns.length > 0);
+
+    const testMatch = (str) => engagementBaitPatterns.some(p => p.test(str));
+
+    // Conversational question hooks
+    assert.strictEqual(testMatch('What are your thoughts on this? Agree?'), true);
+    assert.strictEqual(testMatch('¿Estás de acuerdo con esta decisión?'), true);
+
+    // Thread starters and artificial curiosity hooks
+    assert.strictEqual(testMatch('Abro hilo sobre lo que pasó ayer 🧵'), true);
+    assert.strictEqual(testMatch('Here is what happened: A breakdown'), true);
+    assert.strictEqual(testMatch('Aquí te cuento toda la historia:'), true);
+
+    // "Insane" hooks
+    assert.strictEqual(testMatch('This is actually insane, take a look at the video'), true);
+    assert.strictEqual(testMatch('Esto es una locura total lo que acaba de pasar'), true);
+    assert.strictEqual(testMatch('Una medida demencial tomada por el directorio'), true);
+
+    // "Wild" hooks
+    assert.strictEqual(testMatch('This is wild, I never expected this turn of events'), true);
+    assert.strictEqual(testMatch('That is actually wild to witness in person'), true);
+    assert.strictEqual(testMatch('Qué locura cómo reaccionó la gente'), true);
+
+    // Sarcastic template "X is when Y"
+    assert.strictEqual(testMatch('Capitalism is when no food and high prices'), true);
+    assert.strictEqual(testMatch('El comunismo es cuando tienes dos vacas y el estado se las queda'), true);
+    assert.strictEqual(testMatch('Democracy is when you do whatever I say'), true);
+
+    // Aggressive triggers: "is wild" / "are wild", "is insane", skull emoji, starts with Bro, "caught in 4k"
+    assert.strictEqual(testMatch('Her parents are wild ngl 💀'), true);
+    assert.strictEqual(testMatch('Her parents are wild ngl'), true);
+    assert.strictEqual(testMatch('This situation is wild'), true);
+    assert.strictEqual(testMatch('This is insane'), true);
+    assert.strictEqual(testMatch('They are insane for doing that'), true);
+    assert.strictEqual(testMatch('Literally any post with a skull emoji 💀'), true);
+    assert.strictEqual(testMatch('Bro was caught in 4k f'), true);
+    assert.strictEqual(testMatch('Bro really thought nobody would notice'), true);
+    assert.strictEqual(testMatch('He was caught in 4k during the stream'), true);
+    assert.strictEqual(testMatch('caught and exposed in 4k'), true);
+    assert.strictEqual(testMatch('caught her in 4k'), true);
+
+    // False positives checks
+    assert.strictEqual(testMatch('We saw wild animals roaming freely in the national park'), false);
+    assert.strictEqual(testMatch('The patient was diagnosed with a non-insane psychological condition'), false);
+    assert.strictEqual(testMatch('A regular discussion on economic models across history'), false);
   });
 });

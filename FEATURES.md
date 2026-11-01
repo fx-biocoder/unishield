@@ -9,20 +9,21 @@ UniShield provides an extensive suite of silent, client-side content moderation,
 - [X (Twitter)](#x-twitter)
 - [LinkedIn](#linkedin)
 - [User Interface & Experience](#user-interface--experience)
-- [Privacy Architecture](#privacy-architecture)
 
 ---
 
 ## Reddit
 
-- **Auto-Generated Bot Detection:** Identifies and silently removes accounts created through Reddit's automated default username schemes (e.g. `Word-Word-1234` or `Word_Word1234`).
+- **Auto-Generated Bot Detection:** Identifies and silently removes accounts created through Reddit's automated default username schemes (e.g. `Word-Word-1234`, `Word_Word1234`, or `CamelCase1234`).
 - **User Whitelist:** Easily whitelist specific accounts to ensure genuine users who happen to keep default usernames are never mistakenly hidden.
-- **Editorialized Titles (Content Farms & Astroturfing):** Detects and removes submissions with sensationalized, multi-sentence editorialized titles commonly deployed by coordinated political content farms.
-- **Custom Muted Keywords:** Mute custom words or phrases across post titles and comment bodies, with complete tolerance for common casing and symbol disguises.
+- **Protection against Editorialized Titles:** Detects and removes submissions with sensationalized, multi-sentence editorialized titles commonly deployed by coordinated political content farms.
+- **Politics Removal**: Detects and removes submissions with overly-polarizing political content, while optionally allowing to block all politics-related content.
+- **Custom Muted Keywords:** Mute custom words or phrases across post titles and comment bodies, with tolerance for common casing and symbol disguises.
 - **Subreddit Blocklist:** Silently block toxic communities, karma-farming hubs, or sensationalist subreddits from your feeds.
 - **Custom User Blacklist:** Manually block persistent bad-faith accounts.
 - **Promoted Ads Removal:** Strips sponsored submissions, promoted posts, and marketing banners.
-- **Racism & Hate Speech Protection:** Universally filters comments and submissions containing racist attacks, slurs, or xenophobic hostility.
+- **Protection against Racism & Xenophobia:** Universally filters comments and submissions containing racist attacks, slurs, supremacy ideology, or xenophobic hostility across all ethnicities without double standards.
+- **Protection against Religious Discrimination:** Shields against hate speech, derogatory slurs targeting believers, antisemitic tropes, Islamophobic attacks, and blanket dehumanization of faith communities.
 - **Toxic "Gender War":** Hides toxic gender-war bait, misogynistic hostility, and misandrist attacks without double standards.
 
 ---
@@ -33,14 +34,28 @@ UniShield provides an extensive suite of silent, client-side content moderation,
   1. *Do not hide anything:* Keeps political content visible for users who wish to follow active political debates.
   2. *Hide highly polarizing tweets:* Evaluates political discourse and filters out aggressive attacks, sensationalist outrage, and political warfare, while permitting neutral news and discussions.
   3. *Hide all political content:* Strict mode that swiftly and cleanly filters out political entities, election campaigns, government controversies, and political discourse for total peace of mind.
-- **"Broetry" & Engagement Bait Removal:** Silently purges tweets and threads formatted with excessive single-line paragraphs and manipulative hooks designed solely to exploit mobile dwell time.
-- **Engagement Ragebait Suppression:** Filters controversial posts engineered to provoke indignation and emotional hijacking.
+- **Low-Effort Quote Tweet (QRT) Removal:** Eliminates algorithmic quote replies that quote a post and contribute zero substantive value or substance, gaming the feed for viral impressions:
+  - *One-word affirmations & passive agreements:* `This.`, `Literally this`, `Facts`, `Fr fr`, `Based`, `Literal`, `Tal cual`, `Totalmente`, `Basado`, `Factos`, `Amén`.
+  - *Vague & lazy reactions:* `Wild`, `Insane`, `Crazy`, `Sin palabras`, `No lo puedo creer`, `Qué locura`, `El chiste se cuenta solo`, `Bruh`, `Bro...`.
+  - *Cliché viral quote templates:* `Bro really said that...`, `Imagine believing this...`, `He cooked`, `Es cine`.
+  - *Reaction emojis & punctuation-only:* Blocks quote tweets consisting solely of emojis (`💀`, `😭😭😭`, `👀`) or empty punctuation (`???`).
+  - *Substance-aware:* Intelligent character and word count thresholding ensures thoughtful commentary, counter-arguments, and genuine analysis are preserved.
+- **"Broetry" Removal:** Evaluates post layout to detect posts structured with excessive vertical line breaks (5 or more breaks) and predominantly single-sentence paragraphs designed solely to artificially expand mobile screen dwell time.
+- **Low-Effort Viral Engagement Bait:** Aggressively eliminates content engineered with algorithmic hooks to farm engagement:
+  - *Conversational question hooks:* `Agree?`, `Thoughts?`, `¿Estás de acuerdo?`, `¿Qué opinas?`, `Concorda?`, `Opinioni?`.
+  - *Artificial curiosity hooks & thread starters:* `a thread`, `abro hilo`, `un hilo`, `🧵`, `here's what happened`, `here's why`, `aquí te cuento`, `deja de hacer esto`, `stop doing this`.
+  - *Viral slang:* `is wild`, `are wild`, `wild ngl`, `is insane`, `are insane`, `actually insane`, `locura total`.
+  - *Skull emoji traps:* Filters posts with `💀` or `☠️` (including Twitter's platform-rendered image emojis).
+  - *Viral hooks starting with "Bro":* e.g., `Bro was caught in 4k`, `Bro really thought...`, `"Bro is not serious"`.
+  - *Viral catch-phrases:* `caught in 4k` (and variants such as `caught her in 4k`, `caught and exposed in 4k`, `atrapado en 4k`).
+  - *Sarcastic templates:* `X is when Y` (`Capitalism is when...`, `El comunismo es cuando...`).
+- **Ragebait Suppression:** Filters controversial posts engineered to provoke indignation and emotional hijacking via statistical interaction ratio imbalances.
 - **AI-Generated Low-Effort Replies:** Filters generic bot signatures, copy-paste AI summaries, and hollow conversation starters.
 - **Checkmark Tier Filtering:** Independently control visibility for Blue checkmark accounts (paid accounts and engagement-farming replies), Grey checkmarks (government entities and multilateral officials), and Gold checkmarks (verified organizations).
 - **Crypto & Financial Scam Suppression:** Blocks memecoin promotions, wallet drain schemes, and fraudulent "guaranteed profit" hype traps.
 - **Promoted Tweets Removal:** Eliminates timeline ads and sponsored promotional tweets.
 - **Custom Muted Words & Phrases:** Mute specific topics or phrases from appearing on your timeline.
-- **Hate Speech & Toxicity Filters:** Silently shields your timeline from racial slurs, xenophobic abuse, and toxic gender-war bait.
+- **Hate Speech & Toxicity Filters:** Silently shields your timeline from racial slurs, xenophobic abuse, religious hate speech, and toxic gender-war rhetoric.
 
 ---
 
@@ -73,7 +88,8 @@ UniShield provides an extensive suite of silent, client-side content moderation,
 - **Minimalist Toolbar Popup:** A clean popup featuring a master pause/resume switch and a live count of filtered items during your browsing session.
 - **Custom Settings Dashboard:** An elegant dark-mode dashboard to customize every platform filter, manage blocklists and whitelists with interactive chips, and view statistics.
 - **Sidebar Backup & Restore:** Export your entire configuration (including all strictness settings, custom keyword lists, and blocklists) into a clean JSON file, or restore an existing backup with a single click right from the sidebar.
-- **Multi-Language Support:** Fully translated into **English**, **Spanish**, **Portuguese**, and **Italian** using native browser language detection, with zero external localization libraries.
+- **Multi-Language Support:** Fully translated into **English**, **Spanish**, **Portuguese**, and **Italian** using native browser language detection, with natural technical terminology and zero external localization libraries.
+
 
 ---
 

@@ -77,6 +77,16 @@
         setChecked('redditRemoveGenderWar', config.reddit.removeGenderWar !== false);
         setChecked('redditRemoveEditorializedTitles', config.reddit.removeEditorializedTitles !== false);
 
+        // Reddit Political strictness slider (0 = None, 1 = High polarization, 2 = All political)
+        const redditStrictness = typeof config.reddit.politicalStrictness === 'number'
+            ? config.reddit.politicalStrictness
+            : (config.reddit.removeOverlyPolitical === true ? 1 : 0);
+        const redditSliderEl = document.getElementById('redditPoliticalStrictness');
+        if (redditSliderEl) {
+            redditSliderEl.value = redditStrictness;
+            updatePoliticalSliderUI(redditStrictness, 'reddit');
+        }
+
         // X Toggles
         setChecked('xRemovePromoted', config.x.removePromoted !== false);
         setChecked('xRemoveBlueCheckmark', config.x.removeBlueCheckmark === true);
@@ -84,6 +94,7 @@
         setChecked('xRemoveGoldCheckmark', config.x.removeGoldCheckmark === true);
         setChecked('xRemoveAITweets', config.x.removeAITweets !== false);
         setChecked('xRemoveBroetryPosts', config.x.removeBroetryPosts !== false);
+        setChecked('xRemoveLowEffortQuotes', config.x.removeLowEffortQuotes === true);
         setChecked('xRemoveCryptoScams', config.x.removeCryptoScams !== false);
 
         // Political strictness slider (0 = None, 1 = High polarization, 2 = All political)
@@ -93,7 +104,7 @@
         const sliderEl = document.getElementById('xPoliticalStrictness');
         if (sliderEl) {
             sliderEl.value = strictness;
-            updatePoliticalSliderUI(strictness);
+            updatePoliticalSliderUI(strictness, 'x');
         }
 
         const rageEl = document.getElementById('xRemoveRagebait');
@@ -121,29 +132,41 @@
     /**
      * Updates the political strictness slider UI (badge, fill bar, tick active states)
      */
-    function updatePoliticalSliderUI(val) {
-        const badgeEl = document.getElementById('xPoliticalLevelBadge');
+    function updatePoliticalSliderUI(val, platform = 'x') {
+        const isReddit = platform === 'reddit';
+        const badgeId = isReddit ? 'redditPoliticalLevelBadge' : 'xPoliticalLevelBadge';
+        const fillBarId = isReddit ? 'redditPoliticalFillBar' : 'xPoliticalFillBar';
+        const sectionSelector = isReddit ? '#settings-reddit' : '#settings-x';
+
+        const badgeEl = document.getElementById(badgeId);
         if (badgeEl) {
             badgeEl.className = `level-badge level-badge-${val}`;
-            const key = val === 2 ? 'xPoliticalLevel2' : (val === 1 ? 'xPoliticalLevel1' : 'xPoliticalLevel0');
-            const fallback = val === 2 ? 'Ocultar todo el contenido político' : (val === 1 ? 'Ocultar tweets altamente polarizantes' : 'No ocultar nada');
+            const key = isReddit
+                ? (val === 2 ? 'redditPoliticalLevel2' : (val === 1 ? 'redditPoliticalLevel1' : 'redditPoliticalLevel0'))
+                : (val === 2 ? 'xPoliticalLevel2' : (val === 1 ? 'xPoliticalLevel1' : 'xPoliticalLevel0'));
+            const fallback = isReddit
+                ? (val === 2 ? 'Ocultar todo el contenido político' : (val === 1 ? 'Ocultar posts altamente polarizantes' : 'No ocultar nada'))
+                : (val === 2 ? 'Ocultar todo el contenido político' : (val === 1 ? 'Ocultar tweets altamente polarizantes' : 'No ocultar nada'));
             badgeEl.textContent = typeof t === 'function' ? t(key) : fallback;
         }
 
-        const fillBar = document.getElementById('xPoliticalFillBar');
+        const fillBar = document.getElementById(fillBarId);
         if (fillBar) {
             fillBar.style.width = `${val * 50}%`;
         }
 
-        const ticks = document.querySelectorAll('.tick-step[data-step]');
-        ticks.forEach(tick => {
-            const step = parseInt(tick.getAttribute('data-step'), 10);
-            if (step === val) {
-                tick.classList.add('active');
-            } else {
-                tick.classList.remove('active');
-            }
-        });
+        const container = document.querySelector(sectionSelector);
+        if (container) {
+            const ticks = container.querySelectorAll('.tick-step[data-step]');
+            ticks.forEach(tick => {
+                const step = parseInt(tick.getAttribute('data-step'), 10);
+                if (step === val) {
+                    tick.classList.add('active');
+                } else {
+                    tick.classList.remove('active');
+                }
+            });
+        }
     }
 
     /**
@@ -331,44 +354,77 @@
         bindToggle('xRemoveGoldCheckmark', (e) => savePartialConfig({ x: { ...config.x, removeGoldCheckmark: e.target.checked } }));
         bindToggle('xRemoveAITweets', (e) => savePartialConfig({ x: { ...config.x, removeAITweets: e.target.checked } }));
         bindToggle('xRemoveBroetryPosts', (e) => savePartialConfig({ x: { ...config.x, removeBroetryPosts: e.target.checked } }));
+        bindToggle('xRemoveLowEffortQuotes', (e) => savePartialConfig({ x: { ...config.x, removeLowEffortQuotes: e.target.checked } }));
         bindToggle('xRemoveCryptoScams', (e) => savePartialConfig({ x: { ...config.x, removeCryptoScams: e.target.checked } }));
 
-        // X Political Strictness Slider
-        const sliderEl = document.getElementById('xPoliticalStrictness');
-        if (sliderEl) {
-            sliderEl.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value, 10) || 0;
-                updatePoliticalSliderUI(val);
-            });
-            sliderEl.addEventListener('change', (e) => {
-                const val = parseInt(e.target.value, 10) || 0;
-                savePartialConfig({
-                    x: {
-                        ...config.x,
-                        politicalStrictness: val,
-                        removeOverlyPolitical: val > 0
+        // Political Strictness Sliders (Reddit & X)
+        const setupPoliticalSlider = (platform) => {
+            const isReddit = platform === 'reddit';
+            const sliderId = isReddit ? 'redditPoliticalStrictness' : 'xPoliticalStrictness';
+            const sectionSelector = isReddit ? '#settings-reddit' : '#settings-x';
+            const sliderEl = document.getElementById(sliderId);
+
+            if (sliderEl) {
+                sliderEl.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value, 10) || 0;
+                    updatePoliticalSliderUI(val, platform);
+                });
+                sliderEl.addEventListener('change', (e) => {
+                    const val = parseInt(e.target.value, 10) || 0;
+                    if (isReddit) {
+                        savePartialConfig({
+                            reddit: {
+                                ...config.reddit,
+                                politicalStrictness: val,
+                                removeOverlyPolitical: val > 0
+                            }
+                        });
+                    } else {
+                        savePartialConfig({
+                            x: {
+                                ...config.x,
+                                politicalStrictness: val,
+                                removeOverlyPolitical: val > 0
+                            }
+                        });
                     }
                 });
-            });
-        }
+            }
 
-        const tickBtns = document.querySelectorAll('.tick-step[data-step]');
-        tickBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const val = parseInt(btn.getAttribute('data-step'), 10) || 0;
-                if (sliderEl) {
-                    sliderEl.value = val;
-                    updatePoliticalSliderUI(val);
-                    savePartialConfig({
-                        x: {
-                            ...config.x,
-                            politicalStrictness: val,
-                            removeOverlyPolitical: val > 0
+            const container = document.querySelector(sectionSelector);
+            if (container) {
+                const tickBtns = container.querySelectorAll('.tick-step[data-step]');
+                tickBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const val = parseInt(btn.getAttribute('data-step'), 10) || 0;
+                        if (sliderEl) {
+                            sliderEl.value = val;
+                            updatePoliticalSliderUI(val, platform);
+                            if (isReddit) {
+                                savePartialConfig({
+                                    reddit: {
+                                        ...config.reddit,
+                                        politicalStrictness: val,
+                                        removeOverlyPolitical: val > 0
+                                    }
+                                });
+                            } else {
+                                savePartialConfig({
+                                    x: {
+                                        ...config.x,
+                                        politicalStrictness: val,
+                                        removeOverlyPolitical: val > 0
+                                    }
+                                });
+                            }
                         }
                     });
-                }
-            });
-        });
+                });
+            }
+        };
+
+        setupPoliticalSlider('reddit');
+        setupPoliticalSlider('x');
 
         bindToggle('xRemoveRagebait', (e) => savePartialConfig({ x: { ...config.x, removeRagebait: e.target.checked } }));
         bindToggle('xRemoveRacism', (e) => savePartialConfig({ x: { ...config.x, removeRacism: e.target.checked } }));

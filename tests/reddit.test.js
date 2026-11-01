@@ -86,4 +86,54 @@ describe('Reddit Content Filtering Logic', () => {
       assert.strictEqual(matchesKeyword('La casa rodante', 'as'), false);
     });
   });
+
+  describe('Reddit Political Content Filtering (Levels 0, 1, 2)', () => {
+    const { createExtensionContext } = require('./helpers');
+    const { ctx } = createExtensionContext();
+    const Detector = ctx.UniShield.Detector;
+    const scoring = ctx.UniShield.Defaults.politicalScoring;
+
+    it('Level 0: does not hide posts regardless of political content', () => {
+      const strictness = 0;
+      const title = 'El presidente habló hoy en el Congreso Nacional';
+      const shouldBlock = strictness === 2
+        ? Detector.hasPoliticalContent(title, scoring)
+        : (strictness === 1 ? Detector.isOverlyPoliticalTweet(title, 6, scoring) : false);
+      assert.strictEqual(shouldBlock, false);
+    });
+
+    it('Level 1: blocks highly polarizing political posts and comments (score >= 6)', () => {
+      const strictness = 1;
+      const polarizingPost = 'Milei y el kirchnerismo son corruptos traidores que destruyen la democracia #WorldWar3';
+      const normalPoliticalPost = 'El presidente firmó un nuevo decreto en el Congreso';
+
+      const blockPolarizing = strictness === 2
+        ? Detector.hasPoliticalContent(polarizingPost, scoring)
+        : (strictness === 1 ? Detector.isOverlyPoliticalTweet(polarizingPost, 6, scoring) : false);
+
+      const blockNormal = strictness === 2
+        ? Detector.hasPoliticalContent(normalPoliticalPost, scoring)
+        : (strictness === 1 ? Detector.isOverlyPoliticalTweet(normalPoliticalPost, 6, scoring) : false);
+
+      assert.strictEqual(blockPolarizing, true);
+      assert.strictEqual(blockNormal, false);
+    });
+
+    it('Level 2: blocks all political content (any political entity or keyword)', () => {
+      const strictness = 2;
+      const normalPoliticalPost = 'El presidente firmó un nuevo decreto en el Congreso';
+      const nonPoliticalPost = 'Fotos de mi gato durmiendo en el sillón';
+
+      const blockPolitical = strictness === 2
+        ? Detector.hasPoliticalContent(normalPoliticalPost, scoring)
+        : (strictness === 1 ? Detector.isOverlyPoliticalTweet(normalPoliticalPost, 6, scoring) : false);
+
+      const blockNonPolitical = strictness === 2
+        ? Detector.hasPoliticalContent(nonPoliticalPost, scoring)
+        : (strictness === 1 ? Detector.isOverlyPoliticalTweet(nonPoliticalPost, 6, scoring) : false);
+
+      assert.strictEqual(blockPolitical, true);
+      assert.strictEqual(blockNonPolitical, false);
+    });
+  });
 });

@@ -1,6 +1,6 @@
 {
   "name": "unishield",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Universal Social Media Feed Cleaner & Distraction Shield for Reddit, X, and LinkedIn",
   "scripts": {
     "test": "node --test",

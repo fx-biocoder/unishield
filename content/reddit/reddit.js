@@ -677,7 +677,7 @@
         }
       }
 
-      // 4c. Toxicity text filters (single check for racism/hate speech + religious discrimination)
+      // 4c. Toxicity text filters (racism and racial hate speech)
       if (text) {
         const defaults = getDefaults();
         const patterns = (defaults && defaults.patterns) || {};
@@ -695,6 +695,34 @@
           if (isGenderWar) {
             applyAction(item, username || 'genderwar-filter');
             continue;
+          }
+        }
+      }
+
+      // 4d. Political Content filter (strictness check: 0=Disabled, 1=Polarizing/overly political, 2=All political)
+      const strictness = typeof config.reddit.politicalStrictness === 'number'
+        ? config.reddit.politicalStrictness
+        : (config.reddit.removeOverlyPolitical === true ? 1 : 0);
+
+      if (strictness > 0) {
+        const fullContent = postTitle ? (postTitle + (text && text !== postTitle ? (' ' + text) : '')) : text;
+        if (fullContent) {
+          const defaults = getDefaults();
+          const scoringLists = defaults && defaults.politicalScoring;
+          const detector = getDetector();
+
+          if (detector) {
+            if (strictness === 2) {
+              if (detector.hasPoliticalContent && detector.hasPoliticalContent(fullContent, scoringLists)) {
+                applyAction(item, username || 'political-content');
+                continue;
+              }
+            } else if (strictness === 1) {
+              if (detector.isOverlyPoliticalTweet && detector.isOverlyPoliticalTweet(fullContent, 6, scoringLists)) {
+                applyAction(item, username || 'overly-political');
+                continue;
+              }
+            }
           }
         }
       }

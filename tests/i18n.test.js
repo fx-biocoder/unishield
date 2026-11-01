@@ -20,9 +20,15 @@ describe('UniShield.i18n (Internationalization System)', () => {
     assert.strictEqual(i18n.getLang(), 'es');
     assert.strictEqual(i18n.t('active'), 'Activo');
     assert.strictEqual(i18n.t('redditHideEditorialized'), 'Ocultar títulos editorializados');
+    assert.strictEqual(i18n.t('redditPoliticalLevel0'), 'No ocultar nada');
+    assert.strictEqual(i18n.t('redditPoliticalLevel1'), 'Ocultar posts altamente polarizantes');
+    assert.strictEqual(i18n.t('redditPoliticalLevel2'), 'Ocultar todo el contenido político');
     assert.strictEqual(i18n.t('xPoliticalLevel0'), 'No ocultar nada');
     assert.strictEqual(i18n.t('xPoliticalLevel1'), 'Ocultar tweets altamente polarizantes');
     assert.strictEqual(i18n.t('xPoliticalLevel2'), 'Ocultar todo el contenido político');
+    assert.strictEqual(i18n.t('xHideRagebait'), 'Ocultar Ragebait');
+    assert.strictEqual(i18n.t('xHideBroetry'), 'Ocultar "Broetry" y Engagement Bait');
+    assert.strictEqual(i18n.t('xHideLowEffortQuotes'), 'Ocultar Quote Tweets de bajo esfuerzo');
   });
 
   it('loads Portuguese strings correctly for pt-BR', () => {

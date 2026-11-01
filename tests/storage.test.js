@@ -10,7 +10,10 @@ describe('UniShield.Storage', () => {
     const config = await Storage.getConfig();
     assert.strictEqual(config.global.enabled, true);
     assert.strictEqual(config.reddit.removeEditorializedTitles, true);
+    assert.strictEqual(config.reddit.politicalStrictness, 0);
+    assert.strictEqual(config.reddit.removeOverlyPolitical, false);
     assert.strictEqual(config.x.politicalStrictness, 0);
+    assert.strictEqual(config.x.removeLowEffortQuotes, false);
   });
 
   it('saves and restores partial configuration changes', async () => {
@@ -19,11 +22,15 @@ describe('UniShield.Storage', () => {
 
     await Storage.getConfig();
     await Storage.setConfig({
-      x: { politicalStrictness: 2 }
+      reddit: { politicalStrictness: 1, removeOverlyPolitical: true },
+      x: { politicalStrictness: 2, removeLowEffortQuotes: true }
     });
 
     const updated = await Storage.getConfig();
+    assert.strictEqual(updated.reddit.politicalStrictness, 1);
+    assert.strictEqual(updated.reddit.removeOverlyPolitical, true);
     assert.strictEqual(updated.x.politicalStrictness, 2);
+    assert.strictEqual(updated.x.removeLowEffortQuotes, true);
   });
 
   it('handles cleanSubredditName accurately', () => {

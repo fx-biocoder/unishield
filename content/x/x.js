@@ -29,24 +29,121 @@
         transitionContainer: '[data-testid="app-text-transition-container"]'
     };
 
-    const regexBroetryWords = /agree\?|thoughts\?|¿estás de acuerdo\?|¿qué opinas\?|¿coincidís\?|concorda\?|opinioni\?|d'accordo\?|a thread\b|abro hilo\b|un hilo\b|🧵|here['’]s what happened:|here['’]s why:|aquí te cuento:|te cuento:|deja de hacer esto|stop doing this/i;
     const adBadges = new Set(['ad', 'promoted', 'patrocinado', 'publicidad', 'sponsorisé', 'gesponsert', 'publicité']);
 
+    /**
+     * Extracts text content from a DOM element, replacing emoji <img> tags with their alt text
+     */
+    function extractElementText(element) {
+        if (!element) return '';
+        const imgs = element.querySelectorAll('img[alt]');
+        if (imgs.length === 0) return element.textContent || '';
+
+        let text = '';
+        const walk = (node) => {
+            if (node.nodeType === 3) {
+                text += node.nodeValue;
+            } else if (node.nodeType === 1) {
+                if (node.tagName === 'IMG') {
+                    text += node.getAttribute('alt') || '';
+                } else if (node.tagName === 'BR') {
+                    text += '\n';
+                } else {
+                    for (let child = node.firstChild; child; child = child.nextSibling) {
+                        walk(child);
+                    }
+                }
+            }
+        };
+        walk(element);
+        return text;
+    }
+
+    /**
+     * Checks if a tweet is "Broetry" (excessive line breaks with single-sentence paragraphs).
+     */
     function isBroetryTweet(text, textElement) {
-        if (regexBroetryWords.test(text)) {
-            return true;
+        if (!text) return false;
+        const detector = window.UniShield && window.UniShield.Detector;
+        const brCount = textElement ? textElement.querySelectorAll('br').length : 0;
+        if (detector && detector.isBroetry) {
+            return detector.isBroetry(text, brCount);
         }
+
+        // Fallback broetry structure evaluation
         const newlines = (text.match(/\n/g) || []).length;
-        if (newlines >= 5) {
-            return true;
-        }
-        if (textElement) {
-            const brCount = textElement.querySelectorAll('br').length;
-            if (brCount >= 5) {
+        const lineBreakCount = Math.max(newlines, brCount);
+        if (lineBreakCount >= 5) return true;
+
+        const paragraphs = text.split(/\n+/).map(p => p.trim()).filter(Boolean);
+        if (paragraphs.length >= 3 && lineBreakCount >= 3) {
+            let singleSentenceParas = 0;
+            for (const p of paragraphs) {
+                const words = p.split(/\s+/).filter(Boolean);
+                const sentences = p.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                if (sentences.length <= 1 && words.length <= 25) {
+                    singleSentenceParas++;
+                }
+            }
+            if (singleSentenceParas >= 3 && (singleSentenceParas / paragraphs.length) >= 0.7) {
                 return true;
             }
         }
+
         return false;
+    }
+
+    /**
+     * Checks if a tweet is low-effort viral engagement bait
+     * (viral slang, "is wild", "is insane", "caught in 4k", starts with "Bro", skull emoji, etc.)
+     */
+    function isEngagementBaitTweet(text, tweet) {
+        if (tweet && tweet.querySelector && tweet.querySelector('img[alt*="💀"], img[alt*="☠️"]')) {
+            return true;
+        }
+        if (!text) return false;
+
+        const detector = window.UniShield && window.UniShield.Detector;
+        const defaults = getDefaults();
+        const patterns = (defaults && defaults.xPatterns && defaults.xPatterns.engagementBait) || null;
+        if (detector && detector.isEngagementBait) {
+            return detector.isEngagementBait(text, patterns);
+        }
+
+        // Fallback checks using centralized patterns from defaults
+        if (Array.isArray(patterns) && patterns.some(rx => rx.test(text))) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Extracts quote tweet details if tweet contains an embedded quote tweet.
+     * In X's DOM:
+     * - Quote tweets contain two User-Name elements (author and quoted author)
+     *   or a nested card in div[role="link"] containing user info or a second tweetText.
+     */
+    function getQuoteTweetDetails(tweet) {
+        if (!tweet) return null;
+        const userNames = tweet.querySelectorAll(SELECTORS.userNameContainer);
+        const tweetTexts = tweet.querySelectorAll(SELECTORS.tweetText);
+
+        const hasQuoteBox = userNames.length >= 2 ||
+            tweetTexts.length >= 2 ||
+            !!tweet.querySelector('div[role="link"] [data-testid="User-Name"]') ||
+            !!tweet.querySelector('div[role="link"] [data-testid="tweetText"]');
+
+        if (!hasQuoteBox) return null;
+
+        // Quoter commentary is always the first tweetText
+        const quoterTextEl = tweetTexts.length > 0 ? tweetTexts[0] : null;
+        const quoterText = quoterTextEl ? extractElementText(quoterTextEl).trim() : '';
+
+        return {
+            isQuote: true,
+            quoterText,
+            quoterTextEl
+        };
     }
 
     /**
@@ -237,10 +334,32 @@
             }
         }
 
+        // 2b. Low-Effort Quote Tweet filter
+        if (config.x.removeLowEffortQuotes === true) {
+            const quoteInfo = getQuoteTweetDetails(tweet);
+            if (quoteInfo && quoteInfo.isQuote) {
+                const detector = window.UniShield && window.UniShield.Detector;
+                const defaults = getDefaults();
+                const patterns = (defaults && defaults.xPatterns && defaults.xPatterns.lowEffortQuotes) || null;
+                if (detector && detector.isLowEffortQuote && detector.isLowEffortQuote(quoteInfo.quoterText, patterns)) {
+                    hideTweet(tweet, 'low-effort-quote');
+                    return;
+                }
+            }
+        }
+
+        // Check skull emoji presence across the whole tweet if Engagement Bait filter is enabled
+        if (config.x.removeBroetryPosts !== false) {
+            if (tweet.querySelector && tweet.querySelector('img[alt*="💀"], img[alt*="☠️"]')) {
+                hideTweet(tweet, 'engagement-bait');
+                return;
+            }
+        }
+
         // Text content filters
         const textElement = tweet.querySelector(SELECTORS.tweetText);
         if (textElement) {
-            const text = textElement.textContent || '';
+            const text = extractElementText(textElement);
             const lowerText = text.toLowerCase();
             const defaults = getDefaults();
             const patterns = (defaults && defaults.xPatterns) || {};
@@ -258,10 +377,16 @@
                 }
             }
 
-            // 4. Broetry & Engagement Bait filter
-            if (config.x.removeBroetryPosts !== false && isBroetryTweet(text, textElement)) {
-                hideTweet(tweet, 'broetry');
-                return;
+            // 4. Broetry & Engagement Bait filters
+            if (config.x.removeBroetryPosts !== false) {
+                if (isBroetryTweet(text, textElement)) {
+                    hideTweet(tweet, 'broetry');
+                    return;
+                }
+                if (isEngagementBaitTweet(text, tweet)) {
+                    hideTweet(tweet, 'engagement-bait');
+                    return;
+                }
             }
 
             // 5. AI Tweets filter
@@ -282,7 +407,7 @@
                 }
             }
 
-            // 7. Racism and religious discrimination hate speech filter (single evaluation via patterns.racism)
+            // 7. Racism and racial hate speech filter
             if (config.x.removeRacism !== false && patterns.racism) {
                 const isHateSpeech = patterns.racism.some(regex => regex.test(text));
                 if (isHateSpeech) {
