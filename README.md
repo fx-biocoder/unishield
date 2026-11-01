@@ -114,7 +114,7 @@ UniShield is completely free, open-source, independent, and tracker-free. Mainta
 - ☕ **Ko-fi:** [ko-fi.com/biocoder](https://ko-fi.com/biocoder)
 - ⭐ **GitHub Sponsors:** [github.com/sponsors/fx-biocoder](https://github.com/sponsors/fx-biocoder)
 - 💳 **PayPal:** [paypal.me/facumartinez680](https://paypal.me/facumartinez680)
-- 🇦🇷 **Mercado Pago:** [link.mercadopago.com.ar/betterlinkedin](https://link.mercadopago.com.ar/betterlinkedin)
+
 
 ### 🚀 Other Ways to Help
 - Star this repository on GitHub ⭐
