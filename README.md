@@ -58,7 +58,7 @@ Install UniShield directly from your browser's store for automatic updates:
 - **Chrome Web Store** (Google Chrome, Brave, Opera, Vivaldi, Microsoft Edge):  
   **[Install from Chrome Web Store](https://chromewebstore.google.com/detail/unishield-universal-feed/mmdlakegpcgplakmoopnnjhfpbclelcg)**
 
-- **Firefox Add-ons** (coming soon):  
+- **Firefox Add-ons**:  
   **[Install from Firefox Add-ons](https://addons.mozilla.org/firefox/addon/unishield/)**
 
 ---
